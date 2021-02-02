@@ -2,6 +2,7 @@ version: "3.6"
 services:
   pollbotplus:
     build: ./
+    restart: always
     volumes:
       - ./data/:/app/data/
     env_file: .env
