@@ -1,3 +1,24 @@
+# VS Code
+.vscode
+
+# Database Files
+data
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite.sqbpro
+*.sqlite-journal
+*.sql
+*.sqbpro
+*.sqlite.backup
+
+# Development plugins
+src/plugins/Markdown
+src/plugins/Utilities
+
+## Start Node.gitignore
+## https://github.com/github/gitignore/blob/master/Node.gitignore
+
 # Logs
 logs
 *.log
