@@ -99,7 +99,7 @@ export default class Help extends BaseCommand {
 						value: stripIndents`
 						**[Support Server](https://discord.gg/RYbkcHfrnR)**  - Got any questions? Join the support server.
 						**[Bot Invite](https://discord.com/api/oauth2/authorize?client_id=${this.client.discord.client?.user?.id}&permissions=355392&scope=bot)** - Want this bot on your own server? Invite the bot.
-						**[Vote on top.gg](https://top.gg/)** - Want to support me for free? Vote for this bot.
+						**[Vote on top.gg](https://top.gg/bot/804245390642642965)** - Want to support me for free? Vote for this bot.
 						**[Support Me](https://ko-fi.com/pollbotplus)** - Want to support me financially? Tip me on Ko-Fi!
 						`,
 					},
