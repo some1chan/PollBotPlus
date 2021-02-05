@@ -40,8 +40,7 @@ export default class extends BaseCommand {
 			const codeblock = "```";
 			const embed = EmbedHelper.getTemplate(
 				msg.discord,
-				this.client.helpCommands,
-				this.id
+				await EmbedHelper.getCheckOutFooter(msg, this.id)
 			).setTitle("Bot Stats").setDescription(stripIndent`
 				${codeblock}yml
 				Server:

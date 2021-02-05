@@ -7,12 +7,10 @@ import {
 	FriendlyError,
 	Logger,
 	Message,
-	PluginManager,
 } from "@framedjs/core";
-import Emoji from "node-emoji"; // Doing this only because Windows can't render emotes for some reason
+import Emoji from "node-emoji";
 import { oneLine } from "common-tags";
 import Poll from "../commands/Poll";
-// import util from "util";
 
 export default class extends BaseEvent {
 	constructor(plugin: BasePlugin) {
@@ -56,18 +54,18 @@ export default class extends BaseEvent {
 		const isPollEmbed: boolean | undefined = embedDescription?.includes(
 			"poll by <@"
 		);
-		const guildOrTwitchId = Message.discordGetGuildOrTwitchId(
+		const place = Message.discordGetPlace(
 			this.client,
 			reaction.message.guild
 		);
 		const commandRan = await this.client.formatting.format(
 			`$(command poll)`,
-			guildOrTwitchId
+			place
 		);
 		const newContent = `${reaction.message.content
 			.replace(
 				"poll:",
-				await this.client.formatting.format(commandRan, guildOrTwitchId)
+				await this.client.formatting.format(commandRan, place)
 			)
 			.trim()}`;
 

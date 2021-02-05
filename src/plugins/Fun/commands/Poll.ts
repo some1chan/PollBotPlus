@@ -23,12 +23,10 @@ export default class Poll extends BaseCommand {
 			hideUsageInHelp: true,
 			examples: stripIndents`
 			\`$(command ${plugin.id} poll) Do you like pancakes?\` - Simple poll
-			\`$(command ${plugin.id} poll) once Pineapple on pizza?\` - Choose once
 			\`$(command ${plugin.id} poll) Pizza or burger? "🍕" "🍔"\` -  Custom reactions
-
 			\`$(command ${plugin.id} poll) Best Doki? "Natsuki" "Sayori" "Yuri" "M̵on̸ika̷"\` - Embed poll
-			\`$(command ${plugin.id} poll) once ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose once
-			\`$(command ${plugin.id} poll) Am I running out of ideas? "✅ Yes" "👍 Yep"\` - Custom reactions`,
+			\`$(command ${plugin.id} poll) Am I running out of poll ideas? "✅ Yes" "👍 Yep"\` - Custom reactions
+			\`$(command ${plugin.id} poll) once ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose once`,
 			notes: stripIndents`
 			The \`once\` option will work unless the bot is momentarily offline.
 			${oneLine`For a lasting "choose only once" poll, please use a website like
@@ -52,7 +50,7 @@ export default class Poll extends BaseCommand {
 			} else {
 				await PluginManager.sendHelpForCommand(
 					msg,
-					await msg.getGuildOrTwitchId()
+					await msg.getPlace()
 				);
 				return false;
 			}
@@ -150,8 +148,7 @@ export default class Poll extends BaseCommand {
 			// Sends and creates the embed
 			const embed = EmbedHelper.getTemplate(
 				msg.discord,
-				this.client.helpCommands,
-				this.id
+				await EmbedHelper.getCheckOutFooter(msg, this.id)
 			)
 				.setTitle(questionContent)
 				.setDescription(

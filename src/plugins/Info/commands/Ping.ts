@@ -41,8 +41,7 @@ export default class extends BaseCommand {
 
 			const embed = EmbedHelper.getTemplate(
 				msg.discord,
-				this.client.helpCommands,
-				this.id
+				await EmbedHelper.getCheckOutFooter(msg, this.id)
 			).setTitle("Latency Info").setDescription(stripIndent`
 				🏓 \`Message Latency\` - ${botDateNumber - userDateNumber}ms
 				🤖 \`API Latency\` - ${Math.round(discordMsg.client.ws.ping)}ms`);

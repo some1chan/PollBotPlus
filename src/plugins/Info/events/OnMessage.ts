@@ -24,13 +24,13 @@ export default class extends BaseEvent {
 		) {
 			const commandId = "help";
 
-			const guildOrTwitchId = Message.discordGetGuildOrTwitchId(
+			const place = Message.discordGetPlace(
 				this.client,
 				msg.guild
 			);
 			const commandPrefix = this.plugin.commands
 				.get(commandId)
-				?.getDefaultPrefix(guildOrTwitchId);
+				?.getDefaultPrefix(place);
 
 			try {
 				const newFramedMsg = new Message({
@@ -40,7 +40,7 @@ export default class extends BaseEvent {
 						base: msg,
 					},
 				});
-				await newFramedMsg.getMessageElements(guildOrTwitchId);
+				await newFramedMsg.getMessageElements(place);
 				await this.plugin.plugins.runCommand(newFramedMsg);
 			} catch (error) {
 				Logger.error(error.stack);

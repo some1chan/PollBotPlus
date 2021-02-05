@@ -9,6 +9,7 @@ Logger.level = process.env.LOGGER_LEVEL ? process.env.LOGGER_LEVEL : "silly";
 //#region Gets the version of the app
 
 import fs from "fs";
+import { sep } from "path";
 import path from "path";
 let appVersion: string | undefined;
 try {
@@ -57,52 +58,53 @@ const DbLogger = Winston.createLogger({
 //#endregion
 
 Logger.info(`Loaded imports (${Framed.Utils.hrTimeElapsed(startTime)}s).`);
-// Initializes Client
-const client = new Framed.Client({
-	defaultConnection: {
-		type: "sqlite",
-		enableWAL: true,
-		database: `${__dirname}${path.sep}..${path.sep}data${path.sep}FramedDB.sqlite`,
-		synchronize:
-			process.env.TYPEORM_SYNCHRONIZE?.toLocaleLowerCase() == "true",
-		dropSchema:
-			process.env.TYPEORM_DROP_SCHEMA?.toLocaleLowerCase() == "true",
-		logger: new TypeORMLogger(DbLogger, "all"),
-		entities: [Framed.DatabaseManager.defaultEntitiesPath],
-	},
-	defaultPrefix: process.env.DEFAULT_PREFIX,
-	appVersion: appVersion,
-});
 
-// Load plugins
-client.plugins.loadPluginsIn({
-	dirname: path.join(__dirname, "plugins"),
-	filter: /^(.+plugin)\.(js|ts)$/,
-	excludeDirs: /^(.*)\.(git|svn)$|^(.*)subcommands(.*)$/,
-});
-
-Logger.info(
-	`Loaded custom plugins (${Framed.Utils.hrTimeElapsed(startTime)}s).`
-);
-
-// Login
-client
-	.login([
-		{
-			type: "discord",
-			discord: {
-				token: process.env.DISCORD_TOKEN,
-			},
+async function start() {
+	// Initializes Client
+	const client = new Framed.Client({
+		defaultConnection: {
+			type: "sqlite",
+			enableWAL: true,
+			database: `${__dirname}${sep}..${sep}data${sep}FramedDB.sqlite`,
+			synchronize:
+				process.env.TYPEORM_SYNCHRONIZE?.toLocaleLowerCase() == "true",
+			dropSchema:
+				process.env.TYPEORM_DROP_SCHEMA?.toLocaleLowerCase() == "true",
+			logger: new TypeORMLogger(DbLogger, "all"),
+			entities: [Framed.DatabaseManager.defaultEntitiesPath],
 		},
-	])
-	.then(() => {
-		Logger.info(
-			`Done (${Framed.Utils.hrTimeElapsed(startTime)}s)! Framed.js v${
-				Framed.version
-			} has been loaded.`
-		);
+		defaultPrefix: process.env.DEFAULT_PREFIX,
+		appVersion: appVersion,
+	});
 
-		try {
+	// Load plugins
+	client.plugins.loadPluginsIn({
+		dirname: path.join(__dirname, "plugins"),
+		filter: /^(.+plugin)\.(js|ts)$/,
+		excludeDirs: /^(.*)\.(git|svn)$|^(.*)subcommands(.*)$/,
+	});
+
+	Logger.info(
+		`Loaded custom plugins (${Framed.Utils.hrTimeElapsed(startTime)}s).`
+	);
+
+	// Login
+	client
+		.login([
+			{
+				type: "discord",
+				discord: {
+					token: process.env.DISCORD_TOKEN,
+				},
+			},
+		])
+		.then(() => {
+			Logger.info(
+				`Done (${Framed.Utils.hrTimeElapsed(startTime)}s)! Framed.js v${
+					Framed.version
+				} has been loaded.`
+			);
+
 			client.discord.client
 				?.generateInvite({
 					permissions: [
@@ -129,7 +131,7 @@ client
 					Logger.info(`Generated bot invite link:\n${link}`)
 				)
 				.catch(Logger.error);
-		} catch (error) {
-			Logger.error(error.stack);
-		}
-	});
+		});
+}
+
+start();

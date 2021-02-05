@@ -15,8 +15,7 @@ export default class extends BaseCommand {
 			const bulletPoint = "​ **•** ​ ";
 			const embed = EmbedHelper.getTemplate(
 				msg.discord,
-				this.client.helpCommands,
-				this.id
+				await EmbedHelper.getCheckOutFooter(msg, this.id)
 			)
 				.setTitle("Usage Key")
 				.setDescription(

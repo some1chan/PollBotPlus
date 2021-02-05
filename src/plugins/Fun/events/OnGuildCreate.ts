@@ -41,14 +41,14 @@ export default class extends BaseEvent {
 					) {
 						const command = this.client.plugins.getCommand(
 							"help",
-							Message.discordGetGuildOrTwitchId(
+							Message.discordGetPlace(
 								this.client,
 								guild
 							)
 						);
 
 						if (command) {
-							const guildOrTwitchId = Message.discordGetGuildOrTwitchId(
+							const place = Message.discordGetPlace(
 								this.client,
 								guild
 							);
@@ -58,7 +58,7 @@ export default class extends BaseEvent {
 								client: this.client,
 								content: await this.client.formatting.format(
 									"$(command help)",
-									guildOrTwitchId
+									place
 								),
 								discord: {
 									client: guild.client,
@@ -66,7 +66,7 @@ export default class extends BaseEvent {
 									author: guild.client.user,
 								},
 							});
-							await msg.getMessageElements(guildOrTwitchId);
+							await msg.getMessageElements(place);
 
 							// Directly addressing the command allows us to bypass 
 							// the bot user execution check

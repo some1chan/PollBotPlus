@@ -15,13 +15,13 @@ export default class extends BaseEvent {
 
 		const commandId = "poll";
 
-		const guildOrTwitchId = Message.discordGetGuildOrTwitchId(
+		const place = Message.discordGetPlace(
 			this.client,
 			msg.guild
 		);
 		const commandPrefix = this.plugin.commands
 			.get(commandId)
-			?.getDefaultPrefix(guildOrTwitchId);
+			?.getDefaultPrefix(place);
 		const newContent = msg.content
 			.replace(legacyPollString, `${commandPrefix}${commandId}`)
 			.trim();

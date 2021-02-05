@@ -40,7 +40,7 @@ export default class extends BaseCommand {
 	}
 
 	async run(msg: Message): Promise<boolean> {
-		const guildOrTwitchId = await msg.getGuildOrTwitchId(true);
+		const place = await msg.getPlace(true);
 
 		if (msg.args && msg.args[0]) {
 			// Checks for permission
@@ -55,11 +55,11 @@ export default class extends BaseCommand {
 				);
 			}
 
-			if (guildOrTwitchId) {
+			if (place) {
 				try {
-					await this.client.setGuildOrTwitchIdPrefix(
+					await this.client.place.setPlacePrefix(
 						"default",
-						guildOrTwitchId,
+						place,
 						msg.args[0]
 					);
 					switch (msg.platform) {
@@ -67,8 +67,7 @@ export default class extends BaseCommand {
 							if (msg.discord) {
 								const embed = EmbedHelper.getTemplate(
 									msg.discord,
-									this.client.helpCommands,
-									this.id
+									await EmbedHelper.getCheckOutFooter(msg, this.id)
 								)
 									.setTitle("Changed Prefix")
 									.setDescription(
@@ -99,7 +98,7 @@ export default class extends BaseCommand {
 				return false;
 			}
 		} else {
-			await PluginManager.sendHelpForCommand(msg, guildOrTwitchId);
+			await PluginManager.sendHelpForCommand(msg, place);
 			return false;
 		}
 	}

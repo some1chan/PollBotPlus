@@ -5,8 +5,9 @@ import {
 	Discord,
 	EmbedHelper,
 	InlineOptions,
-	Message,
 	Logger,
+	Message,
+	Place,
 } from "@framedjs/core";
 import { oneLine, oneLineInlineLists, stripIndents } from "common-tags";
 
@@ -55,8 +56,7 @@ export default class Help extends BaseCommand {
 		if (msg.discord) {
 			const unformattedEmbed = EmbedHelper.getTemplate(
 				msg.discord,
-				this.client.helpCommands,
-				this.id
+				await EmbedHelper.getCheckOutFooter(msg, this.id)
 			)
 				.setTitle("Welcome to PollBotPlus!")
 				.setDescription(
@@ -107,7 +107,7 @@ export default class Help extends BaseCommand {
 				.setFooter("Thank you for using PollBotPlus!");
 			const embed = await this.client.formatting.formatEmbed(
 				unformattedEmbed,
-				await msg.getGuildOrTwitchId()
+				await msg.getPlace()
 			);
 
 			await msg.discord.channel.send(embed);
@@ -133,7 +133,7 @@ export default class Help extends BaseCommand {
 			id: string,
 			newArgs: string[],
 			command: BaseCommand,
-			guildOrTwitchId: string
+			place: Place
 		) => Promise<Discord.MessageEmbed | undefined> = Help.createHelpEmbed
 	): Promise<Discord.MessageEmbed[]> {
 		if (msg.discord && args[0]) {
@@ -143,13 +143,14 @@ export default class Help extends BaseCommand {
 			const newArgs = [...args];
 			const command = newArgs.shift();
 
-			const guildOrTwitchId = await msg.getGuildOrTwitchId();
+			const place = await msg.getPlace();
 
 			if (command) {
 				// Goes through all matching commands. Hopefully, there's only one, but
 				// this allows for edge cases in where two plugins share the same command.
 				const matchingCommands = msg.client.plugins.getCommands(
-					command
+					command,
+					place
 				);
 
 				// Renders all potential help
@@ -159,7 +160,7 @@ export default class Help extends BaseCommand {
 						id,
 						newArgs,
 						baseCommand,
-						guildOrTwitchId
+						place
 					);
 					if (embed) embeds.push(embed);
 				}
@@ -168,13 +169,12 @@ export default class Help extends BaseCommand {
 				const dbCommand = await msg.client.database.findCommand(
 					command,
 					msg.client.defaultPrefix,
-					guildOrTwitchId ? guildOrTwitchId : "default"
+					place
 				);
 				if (dbCommand) {
 					const embed = EmbedHelper.getTemplate(
 						msg.discord,
-						msg.client.helpCommands,
-						id
+						await EmbedHelper.getCheckOutFooter(msg, id)
 					);
 					// Shows the command/subcommand chain
 					// ex. .command add
@@ -196,7 +196,7 @@ export default class Help extends BaseCommand {
 			const processingEmbeds: Promise<Discord.MessageEmbed>[] = [];
 			for (const embed of embeds) {
 				processingEmbeds.push(
-					msg.client.formatting.formatEmbed(embed, guildOrTwitchId)
+					msg.client.formatting.formatEmbed(embed, place)
 				);
 			}
 			const processedEmbeds = await Promise.allSettled(processingEmbeds);
@@ -231,14 +231,13 @@ export default class Help extends BaseCommand {
 		id: string,
 		newArgs: string[],
 		command: BaseCommand,
-		guildOrTwitchId = "default"
+		place: Place
 	): Promise<Discord.MessageEmbed | undefined> {
 		if (!msg.discord) return undefined;
 
 		const embed = EmbedHelper.getTemplate(
 			msg.discord,
-			msg.client.helpCommands,
-			id
+			await EmbedHelper.getCheckOutFooter(msg, id)
 		);
 
 		// Get potential subcommand
@@ -253,7 +252,7 @@ export default class Help extends BaseCommand {
 
 		// Shows the command/subcommand chain
 		// ex. .command add
-		const commandRan = `${command.getDefaultPrefix(guildOrTwitchId)}${
+		const commandRan = `${command.getDefaultPrefix(place)}${
 			command.id
 		} ${oneLineInlineLists`${subcommandIds}`}`.trim();
 		embed.setTitle(commandRan);
@@ -267,7 +266,7 @@ export default class Help extends BaseCommand {
 			examples,
 			notes,
 			usage,
-		} = primaryCommand.getCommandNotationFormatting(guildOrTwitchId);
+		} = primaryCommand.getCommandNotationFormatting(place);
 
 		// Get the description
 		if (!description) {
@@ -308,13 +307,13 @@ export default class Help extends BaseCommand {
 			);
 		}
 
-		return msg.client.formatting.formatEmbed(embed, guildOrTwitchId);
+		return msg.client.formatting.formatEmbed(embed, place);
 	}
 
 	/**
 	 * Use inline
-	 * @param command 
-	 * @param index 
+	 * @param command
+	 * @param index
 	 */
 	static useInline(
 		command: BaseCommand,

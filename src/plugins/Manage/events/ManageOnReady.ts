@@ -45,7 +45,11 @@ export default class extends BaseEvent {
 	}
 
 	async build(): Promise<void> {
-		const help = await Message.format(`$(command help) | @PollBotPlus help`, this.client);
+		const help = await Message.format(
+			`$(command help) | @PollBotPlus help`,
+			this.client,
+			{ id: "default", platform: "none" }
+		);
 
 		this.presences.push({
 			activity: {
