@@ -7,13 +7,17 @@ WORKDIR /app
 # Installs pnpm
 RUN npm i -g pnpm
 
+# Installs sqlite3 prerequisite
+RUN apk add --no-cache --virtual .build-deps make gcc g++ python 
+
 # Copies pnpm deps
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 
 # Installs modules
-RUN apk add --no-cache --virtual .build-deps make gcc g++ python 
 RUN pnpm install 
+
+# Deletes prerequisite
 RUN apk del .build-deps
 
 # Copy the rest of the files
