@@ -3,6 +3,9 @@
 
 # Database Files
 data
+ormconfig.js
+ormconfig.ts
+ormconfig.json
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal

@@ -13,6 +13,7 @@ import {
 import { emotes, oneOptionMsg, optionEmotes } from "../Fun.plugin";
 import { oneLine, stripIndents } from "common-tags";
 import * as Fun from "../../Fun/Fun.plugin";
+import Emoji from "node-emoji";
 
 export default class Poll extends BaseCommand {
 	constructor(plugin: BasePlugin) {
@@ -24,7 +25,7 @@ export default class Poll extends BaseCommand {
 			examples: stripIndents`
 			\`$(command ${plugin.id} poll) Do you like pancakes?\` - Simple poll
 			\`$(command ${plugin.id} poll) Pizza or burger? "🍕" "🍔"\` -  Custom reactions
-			\`$(command ${plugin.id} poll) Best Doki? "Natsuki" "Sayori" "Yuri" "M̵on̸ika̷"\` - Embed poll
+			\`$(command ${plugin.id} poll) Best Doki? "Natsuki" "Sayori" "Yuri" "M n_ka"\` - Embed poll
 			\`$(command ${plugin.id} poll) Am I running out of poll ideas? "✅ Yes" "👍 Yep"\` - Custom reactions
 			\`$(command ${plugin.id} poll) once ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose once`,
 			notes: stripIndents`
@@ -137,7 +138,37 @@ export default class Poll extends BaseCommand {
 				testDuplicates.push(emote);
 			} else {
 				throw new FriendlyError(
-					`${msg.discord.author}, you can't have a duplicate emote (${emote}) for a reaction!`
+					`${msg.discord.author}, you can't have the ${emote} duplicated for reactions!`
+				);
+			}
+		}
+
+		// Checks if the bot has access to the reaction
+		for (const emote of reactionEmotes) {
+			const discordEmoteRegex = /<:.+?:\d+>/g;
+			let failed = false;
+
+			if (emote.match(discordEmoteRegex)) {
+				const startNameRegex = /<:[^:\s]+:/g;
+				const isolatedId = emote
+					.replace(startNameRegex, "")
+					.replace(">", "");
+				if (!msg.discord.client.emojis.cache.get(isolatedId)) {
+					failed = true;
+				}
+			} else {
+				const isNormalEmoji =
+					Emoji.emojify(emote, () => {
+						return "";
+					}) != "";
+				if (!isNormalEmoji) {
+					failed = true;
+				}
+			}
+
+			if (failed) {
+				throw new FriendlyError(
+					`${msg.discord.author}, you can't use ${emote} as an emote. I can't access it!`
 				);
 			}
 		}

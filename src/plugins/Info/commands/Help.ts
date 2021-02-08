@@ -76,16 +76,15 @@ export default class Help extends BaseCommand {
 						 */
 						value: stripIndents`
 						\`$(command poll) Do you like pancakes?\` - Simple poll
-						\`$(command poll) Best Doki? "Monika" "J̶ust̴ M̵on̸i̸k̷a̷"\` - Embed poll
+						\`$(command poll) Best Doki? "Monika" "J_st~M n_ka"\` - Embed poll
 						\`$(command poll) once ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose once
 						`,
 					},
 					{
 						name: "Changing the Prefix",
-						value: oneLine`To change this bot's prefix, use
-						\`@PollBotPlus prefix !\` to change it to the \`!\` prefix.
-						You can also use \`$(command prefix) !\`, but that would also change
-						that command's prefix too.`,
+						value: oneLine`To change this bot's prefix, use \`$(command prefix)\`.
+						If you ever forget what this bot's prefix is, you can always use
+						\`@PollBotPlus prefix\` to find and change it.`,
 					},
 					// {
 					// 	name: `Support the Bot!`,
