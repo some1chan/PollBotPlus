@@ -82,6 +82,7 @@ async function start() {
 
 	Object.assign(connectionOptions, {
 		logger: new TypeORMLogger(DbLogger, "all"),
+		entities: [Framed.DatabaseManager.defaultEntitiesPath],
 	});
 
 	// Initializes Client
