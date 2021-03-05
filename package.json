@@ -41,6 +41,7 @@
     "dotenv": "^8.2.0",
     "node-emoji": "^1.10.0",
     "node-schedule": "^2.0.0",
+    "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.0.2",
     "twitch": "^4.5.0",
     "twitch-auth": "^4.5.0",
