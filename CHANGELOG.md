@@ -1,5 +1,11 @@
 # PollBotPlus
 
+## 1.1.2
+
+### Patch Changes
+
+-   04b1aac: put axios and hastebin into prod deps
+
 ## 1.1.1
 
 ### Patch Changes
