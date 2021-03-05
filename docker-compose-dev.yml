@@ -5,6 +5,3 @@ services:
     volumes:
       - ./data/:/app/data/
     env_file: .env
-    ports:
-      - ${API_PORT}:${API_PORT}
-    
