@@ -1,5 +1,6 @@
 dependencies:
   '@framedjs/core': 0.4.0_46f8f1c1a51a032b23fa17d66ac665ea
+  '@top-gg/sdk': 3.0.9
   axios: 0.21.1
   colors: 1.4.0
   common-tags: 1.8.0
@@ -10,6 +11,7 @@ dependencies:
   node-schedule: 2.0.0
   reflect-metadata: 0.1.13
   sqlite3: 5.0.2
+  topgg-autoposter: 1.1.7
   twitch: 4.5.0
   twitch-auth: 4.5.0
   twitch-chat-client: 4.5.0_8a5c596d694dfdf5e82950d75d6ca752
@@ -425,6 +427,13 @@ packages:
     dev: false
     resolution:
       integrity: sha512-/5O7Fq6Vnv8L6ucmPjaWbVG1XkP4FO+w5glqfkIsq3Xw4oyNAdJddbnYodNDAfjVUvo/rrSCTom4kAND7T1o5Q==
+  /@top-gg/sdk/3.0.9:
+    dependencies:
+      node-fetch: 2.6.1
+      raw-body: 2.4.1
+    dev: false
+    resolution:
+      integrity: sha512-AskJQk6+89lIGu6UzjsDxXe4wRuc9lbpXwftIzzng2+kB8R3ZzN7hwa1nC/AacLG07m0gbBwQBWlE5IgexA/kg==
   /@types/common-tags/1.8.0:
     dev: true
     resolution:
@@ -763,6 +772,12 @@ packages:
     requiresBuild: true
     resolution:
       integrity: sha512-yEYTwGndELGvfXsImMBLop58eaGW+YdONi1fNjTINSY98tmMmFijBG6WXgdkfuLNt4imzQNtIE+eBp1PVpMCSw==
+  /bytes/3.1.0:
+    dev: false
+    engines:
+      node: '>= 0.8'
+    resolution:
+      integrity: sha512-zauLjrfCG+xvoyaqLoV8bLVXXNGC4JqlxFCutSDWA6fJrTo2ZuvLYTqZ7aHBLZSMOopbzwv8f+wZcVzfVTI2Dg==
   /cache-content-type/1.0.1:
     dependencies:
       mime-types: 2.1.29
@@ -3112,6 +3127,17 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-ARhCpm70fzdcvNQfPoy49IaanKkTlRWF2JMzqhcJbhSFRZv7nPTvZJdcY7301IPmvW+/p0RgIWnQDLJxifsQ7g==
+  /raw-body/2.4.1:
+    dependencies:
+      bytes: 3.1.0
+      http-errors: 1.7.3
+      iconv-lite: 0.4.24
+      unpipe: 1.0.0
+    dev: false
+    engines:
+      node: '>= 0.8'
+    resolution:
+      integrity: sha512-9WmIKF6mkvA0SLmA2Knm9+qj89e+j1zqgyn8aXGd7+nAduPoqgI9lO57SAZNn/Byzo5P7JhXTyg9PzaJbH73bA==
   /rc/1.2.8:
     dependencies:
       deep-extend: 0.6.0
@@ -3734,6 +3760,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-tsuhQlHSigOTTvonxHXwqSKEVSnWMh2GvpTvXa5YmoyOwL5YvU4lTd/KNVZlKM5v7gqx44UEuQxyPQEpmaIHdg==
+  /topgg-autoposter/1.1.7:
+    dependencies:
+      '@top-gg/sdk': 3.0.9
+    dev: false
+    resolution:
+      integrity: sha512-2c2GFFenbH6pMm/8uB9yjgGFn0LypKuhs8Nn38qiIlBAlkjaqi4ZF1xgjd/pw2/sQZj361Ow3VXpiJMq5tRMzw==
   /tough-cookie/2.5.0:
     dependencies:
       psl: 1.8.0
@@ -3998,6 +4030,12 @@ packages:
       node: '>= 4.0.0'
     resolution:
       integrity: sha512-rBJeI5CXAlmy1pV+617WB9J63U6XcazHHF2f2dbJix4XzpUF0RS3Zbj0FGIOCAva5P/d/GBOYaACQ1w+0azUkg==
+  /unpipe/1.0.0:
+    dev: false
+    engines:
+      node: '>= 0.8'
+    resolution:
+      integrity: sha1-sr9O6FFKrmFltIF4KdIbLvSZBOw=
   /unzip-response/1.0.2:
     dev: false
     engines:
@@ -4313,6 +4351,7 @@ packages:
 specifiers:
   '@changesets/cli': ^2.14.1
   '@framedjs/core': ^0.4.0
+  '@top-gg/sdk': ^3.0.9
   '@types/common-tags': ^1.8.0
   '@types/node': ^14.14.31
   '@types/node-emoji': ^1.8.1
@@ -4329,6 +4368,7 @@ specifiers:
   node-schedule: ^2.0.0
   reflect-metadata: ^0.1.13
   sqlite3: ^5.0.2
+  topgg-autoposter: ^1.1.7
   ts-node-dev: ^1.1.6
   twitch: ^4.5.0
   twitch-auth: ^4.5.0

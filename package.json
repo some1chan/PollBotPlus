@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@framedjs/core": "^0.4.0",
+    "@top-gg/sdk": "^3.0.9",
     "axios": "^0.21.1",
     "colors": "^1.4.0",
     "common-tags": "^1.8.0",
@@ -43,6 +44,7 @@
     "node-schedule": "^2.0.0",
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.0.2",
+    "topgg-autoposter": "^1.1.7",
     "twitch": "^4.5.0",
     "twitch-auth": "^4.5.0",
     "twitch-chat-client": "^4.5.0",
