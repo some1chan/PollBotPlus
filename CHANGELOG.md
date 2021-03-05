@@ -1,5 +1,11 @@
 # PollBotPlus
 
+## 1.2.0
+
+### Minor Changes
+
+-   059587e: top.gg server reporting
+
 ## 1.1.2
 
 ### Patch Changes
