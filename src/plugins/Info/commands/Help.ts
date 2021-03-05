@@ -6,10 +6,13 @@ import {
 	EmbedHelper,
 	InlineOptions,
 	Logger,
-	Message,
+	BaseMessage,
 	Place,
+	FriendlyError,
+	DiscordMessage,
 } from "@framedjs/core";
 import { oneLine, oneLineInlineLists, stripIndents } from "common-tags";
+import { CustomClient } from "../../../structures/CustomClient";
 
 export default class Help extends BaseCommand {
 	constructor(plugin: BasePlugin) {
@@ -17,7 +20,7 @@ export default class Help extends BaseCommand {
 			id: "help",
 			aliases: ["h", "commands"],
 			about: "View help for certain commands and extra info.",
-			usage: "[command]",
+			usage: "[command|page #]",
 			examples: stripIndents`
 				\`{{prefix}}{{id}}\`
 				\`{{prefix}}{{id}} poll\`
@@ -26,24 +29,73 @@ export default class Help extends BaseCommand {
 		});
 	}
 
-	async run(msg: Message): Promise<boolean> {
-		if (msg.args) {
-			if (msg.args[0]) {
-				// Sends help through Embed
-				if (msg.discord) {
-					const embeds = await Help.sendHelpForCommand(
-						msg.args,
-						msg,
-						this.id
+	async run(msg: BaseMessage): Promise<boolean> {
+		if (msg.args && msg instanceof DiscordMessage) {
+			const min = 1;
+			const max = 2;
+			const pageNum = Math.min(
+				Math.max(min, Number(msg.args[0] ?? min)),
+				max
+			);
+
+			switch (pageNum) {
+				case 1:
+					await this.sendHelpAll(msg);
+					return true;
+				case 2:
+					const place = await msg.getPlace();
+					const commandStr = `$(command ${this.plugin.id} poll)`;
+					const newFooterText = this.client.formatting.formatCommandNotation(
+						`Page ${pageNum}/${max} - Use {{prefix}}{{id}} [page #] to view a new page.`,
+						this,
+						place
 					);
-					for await (const embed of embeds) {
-						await msg.discord.channel.send(embed);
+
+					const embed = await this.client.formatting.formatEmbed(
+						EmbedHelper.getTemplate(
+							msg.discord,
+							await EmbedHelper.getCheckOutFooter(msg, this.id)
+						)
+							.setTitle("Advanced Usage")
+							.setDescription(
+								oneLine`
+								If you want more out of PollBotPlus,
+								check out the following below!`
+							)
+							.addField(
+								"Custom Reactions",
+								stripIndents`
+								\`${commandStr} Cats or dogs? "🐱" "🐶"\`
+								\`${commandStr} Am I running out of poll ideas? "✅ Yes" "👍 Yep"\`
+								`
+							)
+							.addField(
+								"Markdown Formatting",
+								stripIndents`
+								To try this example, copy ALL the text below, and paste!
+								\`${commandStr} one Pizza or burger? \`
+								\`"🍕 **Pizza** \`\`\`Clearly the better option.\`\`\`"\`
+								\`"🍔 **Burger** \`\`\`Clearly the superior option.\`\`\`"\``
+							),
+						place
+					);
+					embed.setFooter(`${newFooterText}`, embed.footer?.iconURL);
+					await msg.discord.channel.send(embed);
+					break;
+				default:
+					// Sends help through Embed
+					if (msg.discord) {
+						const embeds = await Help.sendHelpForCommand(
+							msg.args,
+							msg,
+							this.id
+						);
+						for await (const embed of embeds) {
+							await msg.discord.channel.send(embed);
+						}
 					}
-				}
-				return true;
-			} else {
-				return this.sendHelpAll(msg);
 			}
+			return true;
 		}
 		return false;
 	}
@@ -52,7 +104,7 @@ export default class Help extends BaseCommand {
 	 * Shows the help message for all commands
 	 * @param msg Framed message
 	 */
-	private async sendHelpAll(msg: Message): Promise<boolean> {
+	private async sendHelpAll(msg: BaseMessage): Promise<boolean> {
 		if (msg.discord) {
 			const unformattedEmbed = EmbedHelper.getTemplate(
 				msg.discord,
@@ -63,8 +115,8 @@ export default class Help extends BaseCommand {
 					stripIndents`
 					PollBotPlus lets you to create polls on Discord quickly, easily, and beautifully.
 
-					To get started, check the Quick Start. Try copying, editing, and pasting them!
-					If you'd like to learn more, use \`$(command poll)\` by itself.`
+					To get started, check the **Quick Start**. Try copying, editing, and pasting them!
+					To see the rest of what PollBotPlus can do, use \`$(command help) 2\`.`
 				)
 				.addFields([
 					{
@@ -76,8 +128,8 @@ export default class Help extends BaseCommand {
 						 */
 						value: stripIndents`
 						\`$(command poll) Do you like pancakes?\` - Simple poll
-						\`$(command poll) Best Doki? "Monika" "J_st~M n_ka"\` - Embed poll
-						\`$(command poll) once ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose once
+						\`$(command poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
+						\`$(command poll) one ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose one
 						`,
 					},
 					{
@@ -125,16 +177,26 @@ export default class Help extends BaseCommand {
 	 */
 	static async sendHelpForCommand(
 		args: string[],
-		msg: Message,
+		msg: BaseMessage,
 		id: string,
 		createHelpEmbed: (
-			msg: Message,
+			msg: BaseMessage,
 			id: string,
 			newArgs: string[],
 			command: BaseCommand,
 			place: Place
 		) => Promise<Discord.MessageEmbed | undefined> = Help.createHelpEmbed
 	): Promise<Discord.MessageEmbed[]> {
+		if (!(msg.client instanceof CustomClient)) {
+			Logger.error(
+				"CustomClient is needed! This code needs a reference to DatabaseManager"
+			);
+			throw new FriendlyError(
+				oneLine`The bot wasn't configured correctly!
+				Contact one of the developers about this issue.`
+			);
+		}
+
 		if (msg.discord && args[0]) {
 			const embeds: Discord.MessageEmbed[] = [];
 
@@ -147,7 +209,7 @@ export default class Help extends BaseCommand {
 			if (command) {
 				// Goes through all matching commands. Hopefully, there's only one, but
 				// this allows for edge cases in where two plugins share the same command.
-				const matchingCommands = msg.client.plugins.getCommands(
+				const matchingCommands = msg.client.commands.getCommands(
 					command,
 					place
 				);
@@ -226,7 +288,7 @@ export default class Help extends BaseCommand {
 	 * @param command BaseCommand
 	 */
 	static async createHelpEmbed(
-		msg: Message,
+		msg: BaseMessage,
 		id: string,
 		newArgs: string[],
 		command: BaseCommand,
@@ -257,7 +319,7 @@ export default class Help extends BaseCommand {
 		embed.setTitle(commandRan);
 
 		// The command/subcommand that has the data needed
-		const primaryCommand = finalSubcommand ? finalSubcommand : command;
+		const primaryCommand = finalSubcommand ?? command;
 
 		let {
 			about,

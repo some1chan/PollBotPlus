@@ -1,15 +1,16 @@
-import { oneOptionMsg } from "../Fun.plugin";
+import { onceOptionMsg, oneOptionMsg } from "../Fun.plugin";
 import {
 	BaseEvent,
+	BaseMessage,
 	BasePlugin,
 	Discord,
+	DiscordMessage,
 	EmbedHelper,
 	FriendlyError,
 	Logger,
-	Message,
 } from "@framedjs/core";
-import Emoji from "node-emoji";
 import { oneLine } from "common-tags";
+import Emoji from "node-emoji";
 import Poll from "../commands/Poll";
 
 export default class extends BaseEvent {
@@ -47,17 +48,21 @@ export default class extends BaseEvent {
 			}
 		}
 
-		const embedDescription:
-			| string
-			| undefined = reaction.message.embeds[0]?.description?.toLocaleLowerCase();
+		const embedDescription = reaction.message.embeds[0]?.description?.toLocaleLowerCase();
+		const isPollEmbed = embedDescription?.includes("poll by <@");
 
-		const isPollEmbed: boolean | undefined = embedDescription?.includes(
-			"poll by <@"
-		);
-		const place = Message.discordGetPlace(
-			this.client,
-			reaction.message.guild
-		);
+		// Finds the place
+		const place = reaction.message.guild
+			? await BaseMessage.discordGetPlace(
+					this.client,
+					reaction.message.guild
+			  )
+			: this.client.provider.places.get("discord_default");
+		if (!place) {
+			Logger.error("Couldn't find place");
+			return;
+		}
+
 		const commandRan = await this.client.formatting.format(
 			`$(command poll)`,
 			place
@@ -69,7 +74,7 @@ export default class extends BaseEvent {
 			)
 			.trim()}`;
 
-		const newMsg = new Message({
+		const newMsg = new DiscordMessage({
 			client: this.client,
 			content: newContent,
 			discord: {
@@ -80,12 +85,14 @@ export default class extends BaseEvent {
 				guild: reaction.message.guild,
 			},
 		});
-		await newMsg.getMessageElements();
+		await newMsg.getMessageElements(place);
 		const parsedResults = await Poll.customParse(newMsg, true);
 
-		const singleVoteOnly: boolean | undefined =
+		const singleVoteOnly =
 			embedDescription?.endsWith(oneOptionMsg.toLocaleLowerCase()) ||
-			parsedResults?.onceMultipleOption == "once";
+			embedDescription?.endsWith(onceOptionMsg.toLocaleLowerCase()) ||
+			parsedResults?.pollOptions.includes("once") ||
+			parsedResults?.pollOptions.includes("one");
 
 		const isPollCommand =
 			reaction.message.content.startsWith(commandRan) ||
@@ -120,6 +127,7 @@ export default class extends BaseEvent {
 					);
 					const isSimplePollReaction = isPollEmbed != true;
 					// Generous/lazy check that tries to get all valid options from the embed
+					// TODO: add checks for the emotes at the very beginning of a new line
 					const isOptionPollReaction =
 						embedDescription?.includes(extraReaction.emoji.name) ==
 							true && isPollEmbed == true;
@@ -135,13 +143,11 @@ export default class extends BaseEvent {
 			);
 
 			try {
-				Logger.silly(oneLine`
+				Logger.debug(oneLine`
 					Current reaction: ${reaction.emoji.name} 
 					(${Emoji.unemojify(reaction.emoji.name)} unemojified)`);
 
-				const botMember = reaction.message.guild
-					? reaction.message.guild?.me
-					: null;
+				const botMember = reaction.message.guild?.me ?? null;
 
 				if (!(reaction.message.channel instanceof Discord.DMChannel)) {
 					for await (const reaction of extraUserReactions.values()) {
@@ -152,7 +158,7 @@ export default class extends BaseEvent {
 							)
 						) {
 							throw new FriendlyError(
-								"The bot doesn't have the `MANAGE_MESSAGES` permission on this server!",
+								"The bot doesn't have the `MANAGE_MESSAGES` permission!",
 								"Bot Missing Permissions"
 							);
 						}
@@ -161,6 +167,10 @@ export default class extends BaseEvent {
 							(${Emoji.unemojify(reaction.emoji.name)} unemojified)`);
 						await reaction.users.remove(user.id);
 					}
+				} else {
+					await newMsg.send(
+						"The `one` option isn't supported in DMs!"
+					);
 				}
 			} catch (error) {
 				if (error instanceof FriendlyError) {

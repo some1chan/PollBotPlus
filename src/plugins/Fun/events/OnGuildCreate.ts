@@ -1,9 +1,10 @@
 import {
 	BaseEvent,
+	BaseMessage,
 	BasePlugin,
 	Discord,
+	DiscordMessage,
 	Logger,
-	Message,
 } from "@framedjs/core";
 
 export default class extends BaseEvent {
@@ -39,22 +40,19 @@ export default class extends BaseEvent {
 						permissions?.has("VIEW_CHANNEL") == true &&
 						permissions?.has("SEND_MESSAGES") == true
 					) {
-						const command = this.client.plugins.getCommand(
+						const place = await BaseMessage.discordGetPlace(
+							this.client,
+							guild
+						);
+
+						const command = this.client.commands.getCommand(
 							"help",
-							Message.discordGetPlace(
-								this.client,
-								guild
-							)
+							place
 						);
 
 						if (command) {
-							const place = Message.discordGetPlace(
-								this.client,
-								guild
-							);
-
 							// Preparing message
-							const msg = new Message({
+							const msg = new DiscordMessage({
 								client: this.client,
 								content: await this.client.formatting.format(
 									"$(command help)",
@@ -68,7 +66,7 @@ export default class extends BaseEvent {
 							});
 							await msg.getMessageElements(place);
 
-							// Directly addressing the command allows us to bypass 
+							// Directly addressing the command allows us to bypass
 							// the bot user execution check
 							await command.run(msg);
 						} else {

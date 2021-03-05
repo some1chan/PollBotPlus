@@ -1,10 +1,9 @@
 import {
-	Message,
+	BaseMessage,
 	BasePlugin,
 	BaseCommand,
 	Logger,
 	EmbedHelper,
-	PluginManager,
 	FriendlyError,
 } from "@framedjs/core";
 import { oneLine, stripIndents } from "common-tags";
@@ -23,7 +22,7 @@ export default class extends BaseCommand {
 			\`{{prefix}}{{id}} "pls "\`
 			`,
 			notes: oneLine`
-			By changing the prefix, simple polls with the \`once\` option won't work.
+			By changing the prefix, simple polls with the \`one\` option won't work.
 			If those polls need to keep working, edit that message to use your new prefix.
 			Embed polls aren't affected by prefix changes.
 			`,
@@ -31,7 +30,7 @@ export default class extends BaseCommand {
 				usage: true,
 				examples: true,
 			},
-			permissions: {
+			userPermissions: {
 				discord: {
 					permissions: ["MANAGE_GUILD"],
 				},
@@ -39,46 +38,45 @@ export default class extends BaseCommand {
 		});
 	}
 
-	async run(msg: Message): Promise<boolean> {
-		const place = await msg.getPlace(true);
-
+	async run(msg: BaseMessage): Promise<boolean> {
 		if (msg.args && msg.args[0]) {
-			// Checks for permission
-			if (!this.hasPermission(msg, this.permissions)) {
-				this.sendPermissionErrorMessage(msg);
-				return false;
-			}
-
 			if (msg.args[0].length > 24) {
 				throw new FriendlyError(
 					`The prefix specified is too long (>24 characters)!`
 				);
 			}
 
+			const place = await msg.getPlace(true);
 			if (place) {
 				try {
-					await this.client.place.setPlacePrefix(
-						"default",
-						place,
+					const a = await this.client.provider.prefixes.set(
+						place.id,
 						msg.args[0]
 					);
+					const newPrefix = this.client.provider.prefixes.get(
+						place.id
+					);
+
 					switch (msg.platform) {
 						case "discord":
 							if (msg.discord) {
 								const embed = EmbedHelper.getTemplate(
 									msg.discord,
-									await EmbedHelper.getCheckOutFooter(msg, this.id)
+									await EmbedHelper.getCheckOutFooter(
+										msg,
+										this.id
+									)
 								)
 									.setTitle("Changed Prefix")
 									.setDescription(
-										`The prefix was successfully changed to \`${msg.args[0]}\`.`
+										`The prefix was successfully changed to \`${newPrefix}\`.`
 									);
 								await msg.discord.channel.send(embed);
 								break;
 							}
 						default:
-							msg.send(
-								`Successfully changed the prefix to ${msg.args[0]}`
+							await msg.send(
+								`Successfully changed the prefix to ${newPrefix}`
 							);
 							break;
 					}
@@ -98,7 +96,7 @@ export default class extends BaseCommand {
 				return false;
 			}
 		} else {
-			await PluginManager.sendHelpForCommand(msg, place);
+			await msg.sendHelpForCommand();
 			return false;
 		}
 	}

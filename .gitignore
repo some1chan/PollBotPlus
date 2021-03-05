@@ -16,8 +16,8 @@ ormconfig.json
 *.sqlite.backup
 
 # Development plugins
-src/plugins/Markdown
-src/plugins/Utilities
+# src/plugins/Markdown
+# src/plugins/Utilities
 
 ## Start Node.gitignore
 ## https://github.com/github/gitignore/blob/master/Node.gitignore

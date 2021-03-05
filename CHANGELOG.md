@@ -1,5 +1,27 @@
 # PollBotPlus
 
+## 1.1.0
+
+### Minor Changes
+
+-   05d649a: Release 1.1.0
+
+    -   Features:
+    -   "once" option has been replaced with the shorter (and more sensical) "one" option
+    -   Advanced help section
+    -   Internal helper commands
+
+    -   Noteable Refactors:
+    -   Update @framedjs/core to 0.4.0
+
+### Patch Changes
+
+-   0a57455: Release 1.0.3
+
+    -   feat: better errors on emotes that the bot doesn't know
+    -   feat: use ormconfig instead of hard-coded
+    -   Refactors
+
 ## 1.0.2
 
 ### Patch Changes

@@ -46,6 +46,9 @@ export const optionEmotes = [
 	"🇸",
 	"🇹",
 ];
-export const oneOptionMsg = "You can choose only once.";
+export const oneOptionMsg = "You can choose only one option.";
+export const onceOptionMsg = "You can choose only once.";
 export const pollLimit = 10;
+
+export const discordMaxReactionCount = 20;
 //#endregion

@@ -1,33 +1,45 @@
 import {
 	BaseCommand,
+	BaseMessage,
 	BasePlugin,
 	EmbedHelper,
-	Message,
+	Logger,
+	Utils,
 	version as backEndVersion,
+	FriendlyError,
 } from "@framedjs/core";
-import { stripIndent } from "common-tags";
+import { oneLine, stripIndent } from "common-tags";
+import { CustomClient } from "../../../structures/CustomClient";
 import os from "os";
 
 export default class extends BaseCommand {
 	constructor(plugin: BasePlugin) {
 		super(plugin, {
 			id: "botstats",
-			aliases: ["bot", "uptime", "botinfo", "ver", "version"],
-			about: "Get bot stats, including version and uptime.",
+			aliases: ["bot", "uptime", "botinfo", "ver", "version", "versions"],
+			about: "Get bot stats, including versions and uptime.",
 		});
 	}
 
-	async run(msg: Message): Promise<boolean> {
-		// Rule for debugging
+	async run(msg: BaseMessage): Promise<boolean> {
+		if (!(this.client instanceof CustomClient)) {
+			Logger.error(
+				"CustomClient is needed! This code needs a reference to DatabaseManager"
+			);
+			throw new FriendlyError(
+				oneLine`The bot wasn't configured correctly!
+				Contact one of the developers about this issue.`
+			);
+		}
+
+		// For debugging
 		// eslint-disable-next-line prefer-const
 		let uptime = process.uptime();
 		// uptime = 216120;
 
 		// The rest of the data
 		const osArch = `${os.platform()}/${os.arch()}`;
-		const nodeEnvironment = process.env.NODE_ENV
-			? `${process.env.NODE_ENV}`
-			: "undefined";
+		const nodeEnvironment = process.env.NODE_ENV;
 		const uptimeText = this.secondsToDhms(uptime);
 		const ramUsage = process.memoryUsage().rss / 1024 / 1024;
 		const ramUsageText = `${Number(ramUsage).toFixed(1)}`;
@@ -47,10 +59,10 @@ export default class extends BaseCommand {
 				- OS/Arch:      ${osArch}
 				- Environment:  ${nodeEnvironment}
 				${codeblock}${codeblock}yml
-				Bot:
+				Framed.js Bot:
 				- Uptime:       ${uptimeText}
 				- RAM Usage:    ${ramUsageText} MiB
-				- Framed.js:    ${backEnd}
+				- Back-End:     ${backEnd}
 				- Bot Version:  ${botVersion}
 				${codeblock}
 				`);

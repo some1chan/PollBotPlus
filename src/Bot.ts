@@ -1,34 +1,29 @@
+console.log("Starting bot... this might take a while.");
+
+const botName = "PollBotPlus";
 // https://www.stefanjudis.com/today-i-learned/measuring-execution-time-more-precisely-in-the-browser-and-node-js/
 const startTime = process.hrtime();
-console.log("Starting the bot... This might take a while.");
 
-import * as Framed from "@framedjs/core";
-const Logger = Framed.Logger;
-Logger.level = process.env.LOGGER_LEVEL ? process.env.LOGGER_LEVEL : "silly";
-
-//#region Gets the version of the app
-
+import "reflect-metadata";
+import {
+	APIManager,
+	Logger,
+	LoginOptions,
+	Utils,
+	version,
+} from "@framedjs/core";
+import { CustomClient } from "./structures/CustomClient";
+import { TypeORMLogger } from "./logger/TypeORMLogger";
+import * as TypeORM from "typeorm";
+import Colors from "colors";
+import Winston from "winston";
 import fs from "fs";
 import path from "path";
-let appVersion: string | undefined;
-try {
-	const packageFile = fs.readFileSync(
-		path.resolve(__dirname, "../package.json"),
-		"utf8"
-	);
-	const packageJson = JSON.parse(packageFile);
-	appVersion = packageJson.version;
-} catch (error) {
-	Logger.error(error.stack);
-}
+import { DatabaseManager } from "./managers/DatabaseManager";
+import { CustomAPI } from "./structures/CustomAPI";
 
-//#endregion
-
-//#region Sets up loggers
-
-import { TypeORMLogger } from "./logger/TypeORMLogger";
-import Colors from "colors/safe";
-import Winston from "winston";
+// Sets up loggers
+Logger.level = process.env.LOGGER_LEVEL ? process.env.LOGGER_LEVEL : "silly";
 const format = Winston.format;
 const DbLogger = Winston.createLogger({
 	level: process.env.TYPEORM_WINSTON_LOGGER_LEVEL,
@@ -48,48 +43,100 @@ const DbLogger = Winston.createLogger({
 	transports: [new Winston.transports.Console()],
 });
 
-//#endregion
-
-Logger.info(`Loaded imports (${Framed.Utils.hrTimeElapsed(startTime)}s).`);
+// Gets the version of the app
+let appVersion: string;
+try {
+	const packageFile = fs.readFileSync(
+		path.resolve(__dirname, "../package.json"),
+		"utf8"
+	);
+	const packageJson = JSON.parse(packageFile);
+	appVersion = packageJson.version;
+} catch (error) {
+	Logger.error(error.stack);
+	Logger.warn("Using 0.0.0 as the app version by default.");
+	appVersion = "0.0.0";
+}
+const importTime = Utils.hrTimeElapsed(startTime);
 
 async function start() {
 	Logger.info(
-		`Starting PollBotPlus v${
-			appVersion ? appVersion : "???"
-		}, currently running Framed.js v${Framed.version}.`
+		`Starting ${botName} v${appVersion}, currently running Framed.js v${version}.`
 	);
+	Logger.verbose(`${Utils.hrTimeElapsed(startTime)}s - Loaded imports.`);
 
 	// Get connection options, and adds the logger
-	let connectionOptions: Framed.TypeORM.ConnectionOptions;
+	let connectionOptions: TypeORM.ConnectionOptions;
 
-	try {
-		// Gets any possible connection options from env
-		connectionOptions = await Framed.TypeORM.getConnectionOptions();
-	} catch (error) {
-		// The above can't read ormconfig in the proper folder. This is a workaround;
-		// This code will require the ormconfig.{js,ts,json} file.
+	//#region Connection Options
+	if (process.env.NODE_ENV == "development") {
 		try {
-			const a = require("../ormconfig");
-			if (a.default) {
-				connectionOptions = a.default;
+			const ormconfig = require("../data/ormconfig.ts");
+			if (ormconfig.default) {
+				connectionOptions = ormconfig.default;
 			} else {
-				connectionOptions = a;
+				connectionOptions = ormconfig;
 			}
 		} catch (error) {
-			throw new Error(error);
+			try {
+				const ormconfig = require("../data/ormconfig.json");
+				if (ormconfig.default) {
+					connectionOptions = ormconfig.default;
+				} else {
+					connectionOptions = ormconfig;
+				}
+			} catch (error) {
+				// Gets any possible connection options from env
+				connectionOptions = await TypeORM.getConnectionOptions();
+			}
+		}
+	} else {
+		try {
+			const ormconfig = require("../data/ormconfig.json");
+			if (ormconfig.default) {
+				connectionOptions = ormconfig.default;
+			} else {
+				connectionOptions = ormconfig;
+			}
+		} catch (error) {
+			try {
+				const ormconfig = require("../data/ormconfig.js");
+				if (ormconfig.default) {
+					connectionOptions = ormconfig.default;
+				} else {
+					connectionOptions = ormconfig;
+				}
+			} catch (error) {
+				// Gets any possible connection options from env
+				connectionOptions = await TypeORM.getConnectionOptions();
+			}
 		}
 	}
 
 	Object.assign(connectionOptions, {
 		logger: new TypeORMLogger(DbLogger, "all"),
-		entities: [Framed.DatabaseManager.defaultEntitiesPath],
 	});
+	//#endregion
 
-	// Initializes Client
-	const client = new Framed.Client({
-		defaultConnection: connectionOptions,
-		defaultPrefix: process.env.DEFAULT_PREFIX,
+	// Initializes Database
+	if (!(await TypeORM.createConnection(connectionOptions))) {
+		throw new ReferenceError(DatabaseManager.errorNotFound);
+	}
+
+	// Initializes the client
+	const client = new CustomClient({
 		appVersion: appVersion,
+		autoInitialize: {
+			api: false,
+			commands: false,
+			plugins: false,
+			provider: false
+		},
+		defaultPrefix: process.env.DEFAULT_PREFIX,
+		discord: {
+			botOwners: "200340393596944384",
+		},
+		footer: "",
 	});
 
 	// Load plugins
@@ -98,25 +145,29 @@ async function start() {
 		filter: /^(.+plugin)\.(js|ts)$/,
 		excludeDirs: /^(.*)\.(git|svn)$|^(.*)subcommands(.*)$/,
 	});
-
-	Logger.info(
-		`Loaded custom plugins (${Framed.Utils.hrTimeElapsed(startTime)}s).`
+	Logger.verbose(
+		`${Utils.hrTimeElapsed(startTime)}s - Loaded custom plugins.`
 	);
 
-	// Login
-	await client.login([
+	// Initializes providers, and providers
+	await client.provider.init();
+	await client.database.init();
+
+	const loginData: LoginOptions[] = [
 		{
 			type: "discord",
 			discord: {
 				token: process.env.DISCORD_TOKEN,
 			},
 		},
-	]);
+	];
 
+	// Login
+	await client.login(loginData);
+
+	const hrTimeElapsed = Utils.hrTimeElapsed(startTime);
 	Logger.info(
-		`Done (${Framed.Utils.hrTimeElapsed(startTime)}s)! Framed.js v${
-			Framed.version
-		} has been loaded.`
+		`Done (${hrTimeElapsed}s)! ${botName} v${appVersion} (Framed.js v${version}) has been loaded.`
 	);
 
 	client.discord.client
@@ -132,12 +183,11 @@ async function start() {
 				"READ_MESSAGE_HISTORY",
 
 				// Reactions and embeds needed for polls
-				// Manage message is for the "once" poll option
 				"ADD_REACTIONS",
-				"MANAGE_MESSAGES",
 				"EMBED_LINKS",
 
 				// Extra permissions for just-in-case
+				"MANAGE_MESSAGES",
 				"VIEW_CHANNEL",
 			],
 		})

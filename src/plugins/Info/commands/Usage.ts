@@ -1,5 +1,10 @@
 import { stripIndent } from "common-tags";
-import { EmbedHelper, Message, BasePlugin, BaseCommand } from "@framedjs/core";
+import {
+	BaseCommand,
+	BaseMessage,
+	BasePlugin,
+	EmbedHelper,
+} from "@framedjs/core";
 
 export default class extends BaseCommand {
 	constructor(plugin: BasePlugin) {
@@ -10,7 +15,7 @@ export default class extends BaseCommand {
 		});
 	}
 
-	async run(msg: Message): Promise<boolean> {
+	async run(msg: BaseMessage): Promise<boolean> {
 		if (msg.discord) {
 			const bulletPoint = "​ **•** ​ ";
 			const embed = EmbedHelper.getTemplate(

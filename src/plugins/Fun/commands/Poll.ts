@@ -2,46 +2,76 @@
 import {
 	Argument,
 	BaseCommand,
+	BaseMessage,
 	BasePlugin,
+	BotPermissions,
 	Discord,
 	EmbedHelper,
-	PluginManager,
 	Logger,
-	Message,
 	FriendlyError,
+	DiscordMessage,
 } from "@framedjs/core";
 import { emotes, oneOptionMsg, optionEmotes } from "../Fun.plugin";
 import { oneLine, stripIndents } from "common-tags";
 import * as Fun from "../../Fun/Fun.plugin";
-import Emoji from "node-emoji";
+
+type PollOptions = "one" | "once" | "multiple" | "multi";
+
+interface PollParsedData {
+	question: string;
+	pollOptions: PollOptions[];
+	userOptions: string[];
+}
+
+interface PollOptionData {
+	options: PollOptions[];
+	content: string;
+}
+
+const msgUrlKey = "msgUrl";
 
 export default class Poll extends BaseCommand {
+	readonly originalBotPermissions: Discord.PermissionResolvable[];
+	readonly embedBotPermissions: Discord.PermissionResolvable[];
+	readonly oneBotOptionPermissions: Discord.PermissionResolvable[];
+
 	constructor(plugin: BasePlugin) {
 		super(plugin, {
 			id: "poll",
-			about: "Create a quick poll through Discord.",
-			usage: '[once] <question> [..."options"]',
+			about: oneLine`Create a quick poll through Discord.`,
+			description: oneLine`Create a quick poll through Discord.
+			${process.env.PBP_DESCRIPTION_AD ?? ""}`,
+			usage: '[one] <question> [..."options"]',
 			hideUsageInHelp: true,
 			examples: stripIndents`
 			\`$(command ${plugin.id} poll) Do you like pancakes?\` - Simple poll
-			\`$(command ${plugin.id} poll) Pizza or burger? "🍕" "🍔"\` -  Custom reactions
-			\`$(command ${plugin.id} poll) Best Doki? "Natsuki" "Sayori" "Yuri" "M n_ka"\` - Embed poll
-			\`$(command ${plugin.id} poll) Am I running out of poll ideas? "✅ Yes" "👍 Yep"\` - Custom reactions
-			\`$(command ${plugin.id} poll) once ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose once`,
+			\`$(command ${plugin.id} poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
+			\`$(command ${plugin.id} poll) one ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose one`,
 			notes: stripIndents`
-			The \`once\` option will work unless the bot is momentarily offline.
-			${oneLine`For a lasting "choose only once" poll, please use a website like
+			The \`one\` option will work unless the bot is momentarily offline.
+			${oneLine`For a lasting "choose only one" poll, please use a website like
 			[strawpoll.me](https://strawpoll.me) instead!`}`,
+			botPermissions: {
+				checkAutomatically: false,
+				discord: {
+					permissions: ["SEND_MESSAGES", "ADD_REACTIONS"],
+				},
+			},
 		});
+
+		this.originalBotPermissions =
+			this.botPermissions?.discord?.permissions ?? [];
+		this.embedBotPermissions = ["EMBED_LINKS"];
+		this.oneBotOptionPermissions = ["MANAGE_MESSAGES"];
 	}
 
-	async run(msg: Message): Promise<boolean> {
-		if (msg.discord) {
+	async run(msg: BaseMessage): Promise<boolean> {
+		if (msg instanceof DiscordMessage) {
 			const parseResults = await Poll.customParse(msg);
 			if (!parseResults) return false;
 
-			const pollOptionArgs = parseResults.pollOptionArgs;
-			const questionContent = parseResults.question;
+			const pollOptionArgs = parseResults.userOptions;
+			const questionContent = parseResults.question.trim();
 
 			// If there some poll options
 			if (pollOptionArgs.length >= 1) {
@@ -49,14 +79,69 @@ export default class Poll extends BaseCommand {
 			} else if (questionContent?.length > 0) {
 				return this.createSimplePoll(msg);
 			} else {
-				await PluginManager.sendHelpForCommand(
-					msg,
-					await msg.getPlace()
-				);
+				await msg.sendHelpForCommand();
 				return false;
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Based off of Suggest command
+	 *
+	 * @param msg
+	 * @param channel
+	 */
+	async findCommandMessage(
+		msg: DiscordMessage,
+		channel:
+			| Discord.TextChannel
+			| Discord.DMChannel
+			| Discord.NewsChannel = msg.discord.channel
+	): Promise<Discord.Message | undefined> {
+		let msgWithEmbed: Discord.Message | undefined;
+		if (msg.discord.msg?.edits) {
+			const collection = await channel.messages.fetch({
+				around: msg.discord.msg.id,
+			});
+
+			const regex = /\[\]\(([^)]*)\)/g;
+			for (const [, discordMsg] of collection) {
+				const description = discordMsg.embeds[0]?.description;
+				if (description) {
+					// Attempts to find data in the info embed field
+					const matches = description.matchAll(regex);
+
+					for (const match of matches) {
+						const args = match[1]?.split(", ");
+						if (args && args[0] && args[1]) {
+							const msgUrl = args[0];
+							const key = args[1].replace(/"/g, "");
+
+							// If the key matches
+							if (key == msgUrlKey) {
+								// Check if the message ID in the URL matches this one
+								const msgUrlArgs = msgUrl.split("/");
+								const msgUrlValueId =
+									msgUrlArgs[msgUrlArgs.length - 1];
+
+								const thisUrlArgs = msg.discord.msg.url.split(
+									"/"
+								);
+								const thisUrlValueId =
+									thisUrlArgs[thisUrlArgs.length - 1];
+
+								if (msgUrlValueId == thisUrlValueId) {
+									msgWithEmbed = discordMsg;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return msgWithEmbed;
 	}
 
 	/**
@@ -66,26 +151,22 @@ export default class Poll extends BaseCommand {
 	 * @param askingForOnce
 	 */
 	async createEmbedPoll(
-		msg: Message,
-		parseResults: {
-			onceMultipleOption: string;
-			question: string;
-			pollOptionArgs: string[];
-		}
+		msg: DiscordMessage,
+		parseResults: PollParsedData
 	): Promise<boolean> {
-		if (!msg.discord) return false;
+		const hasOneOption =
+			parseResults.pollOptions.includes("once") ||
+			parseResults.pollOptions.includes("one");
+		const userOptions = parseResults.userOptions;
+		const question = parseResults.question;
 
-		const askingForOnce = parseResults.onceMultipleOption == "once";
-		const pollOptionArgs = parseResults.pollOptionArgs;
-		const questionContent = parseResults.question;
-
-		if (pollOptionArgs.length == 1) {
+		if (userOptions.length == 1) {
 			throw new FriendlyError(
 				`${msg.discord.author}, you need at least more than one option!`
 			);
-		} else if (pollOptionArgs.length > Fun.pollLimit) {
+		} else if (userOptions.length > Fun.pollLimit) {
 			throw new FriendlyError(
-				`${msg.discord.author}, you can only have ${Fun.pollLimit} options or less. You have ${pollOptionArgs.length}!`
+				`${msg.discord.author}, you can only have ${Fun.pollLimit} options or less. You have ${userOptions.length}!`
 			);
 		}
 
@@ -95,11 +176,11 @@ export default class Poll extends BaseCommand {
 		let hasCodeBlock = false;
 		let hasAnyNewContentInOptions = false;
 
-		for (let i = 0; i < pollOptionArgs.length; i++) {
-			const element = pollOptionArgs[i];
+		for (let i = 0; i < userOptions.length; i++) {
+			const element = userOptions[i];
 			hasCodeBlock = element.endsWith("```");
 			if (element) {
-				const parse = Message.parseEmojiAndString(element);
+				const parse = BaseMessage.parseEmojiAndString(element);
 
 				const reactionEmote = parse.newEmote
 					? parse.newEmote
@@ -114,15 +195,15 @@ export default class Poll extends BaseCommand {
 				// If there's more than 7 elements
 				// If there isn't a codeblock to finish it off
 				// Remove the extra new line
-				if (i + 1 < pollOptionArgs.length) {
+				if (i + 1 < userOptions.length) {
 					description += "\n";
 					if (
 						// Is the amount of options less than 8
-						pollOptionArgs.length < 8 &&
+						userOptions.length < 8 &&
 						// Is the end of this option not a codeblock
 						!hasCodeBlock &&
 						// Is this option not the last one
-						i + 1 != pollOptionArgs.length
+						i + 1 != userOptions.length
 					)
 						description += "\n";
 				}
@@ -138,60 +219,71 @@ export default class Poll extends BaseCommand {
 				testDuplicates.push(emote);
 			} else {
 				throw new FriendlyError(
-					`${msg.discord.author}, you can't have the ${emote} duplicated for reactions!`
+					`${msg.discord.author}, you can't have a duplicate emote (${emote}) for a reaction!`
 				);
 			}
 		}
 
-		// Checks if the bot has access to the reaction
-		for (const emote of reactionEmotes) {
-			const discordEmoteRegex = /<:.+?:\d+>/g;
-			let failed = false;
-
-			if (emote.match(discordEmoteRegex)) {
-				const startNameRegex = /<:[^:\s]+:/g;
-				const isolatedId = emote
-					.replace(startNameRegex, "")
-					.replace(">", "");
-				if (!msg.discord.client.emojis.cache.get(isolatedId)) {
-					failed = true;
-				}
-			} else {
-				const isNormalEmoji =
-					Emoji.emojify(emote, () => {
-						return "";
-					}) != "";
-				if (!isNormalEmoji) {
-					failed = true;
-				}
-			}
-
-			if (failed) {
-				throw new FriendlyError(
-					`${msg.discord.author}, you can't use ${emote} as an emote. I can't access it!`
-				);
-			}
-		}
-
+		let msgWithEmbed: Discord.Message | undefined;
 		let newMsg: Discord.Message | undefined;
 
+		try {
+			msgWithEmbed = await this.findCommandMessage(msg);
+		} catch (error) {
+			Logger.error(error.stack);
+		}
+
 		if (hasAnyNewContentInOptions) {
+			const data = `[](${msg.discord.msg?.url}, "${msgUrlKey}")`;
+
 			// Sends and creates the embed
 			const embed = EmbedHelper.getTemplate(
 				msg.discord,
 				await EmbedHelper.getCheckOutFooter(msg, this.id)
 			)
-				.setTitle(questionContent)
+				.setTitle(question)
 				.setDescription(
-					`${description}${hasCodeBlock ? "" : "\n"}` +
+					`${data}${description}${hasCodeBlock ? "" : "\n"}` +
 						`\nPoll by ${msg.discord.author}` +
-						`\n${askingForOnce ? oneOptionMsg : ""}`
+						`\n${hasOneOption ? oneOptionMsg : ""}`
 				)
 				.setFooter("");
-			newMsg = await msg.discord.channel.send(embed);
+
+			// Sets up Permission check
+			const permData: BotPermissions = {
+				discord: {
+					permissions: [
+						...this.originalBotPermissions,
+						...this.embedBotPermissions,
+					],
+				},
+			};
+			// if (hasOneOption) {
+			// 	permData.discord?.permissions?.push(
+			// 		...this.oneBotOptionPermissions
+			// 	);
+			// }
+
+			// Does the check. If it fails, sends the error and returns false
+			const permResults = this.checkBotPermissions(msg, permData);
+			if (!permResults.success) {
+				await this.sendBotPermissionErrorMessage(
+					msg,
+					permData,
+					permResults
+				);
+				return false;
+			}
+
+			// If there was an existing message found, edit. Otherwise, send a new one.
+			if (msgWithEmbed) {
+				newMsg = await msgWithEmbed.edit(embed);
+			} else {
+				newMsg = await msg.discord.channel.send(embed);
+			}
 		} else {
-			// Create a modified simple poll instead,
-			// by reusing the old msg
+			// Create a modified simple poll with
+			// custom reactions instead, by reusing the old msg
 			newMsg = msg.discord.msg;
 		}
 
@@ -201,29 +293,69 @@ export default class Poll extends BaseCommand {
 		}
 
 		// Does the reactions
-		for await (const emoji of reactionEmotes) {
-			await newMsg.react(emoji);
-		}
-
+		await newMsg.fetch();
+		await this.react(newMsg, reactionEmotes);
 		return true;
 	}
 
-	async createSimplePoll(msg: Message): Promise<boolean> {
+	async createSimplePoll(msg: DiscordMessage): Promise<boolean> {
 		// Reacts to a message
 		// newMsg obtains a message by either msg.discord.msg, or
 		// by getting the message through message ID
 		const newMsg = msg.discord?.msg;
 
 		if (newMsg) {
-			const msgReact: Promise<Discord.MessageReaction>[] = [];
-			emotes.forEach(element => {
-				msgReact.push(newMsg.react(element));
-			});
-			await Promise.all(msgReact);
-			return true;
+			if (newMsg.partial) {
+				try {
+					Logger.debug("Fetching message for poll");
+					await newMsg.fetch();
+				} catch (error) {
+					Logger.error(error);
+				}
+			}
+
+			const data = this.checkBotPermissions(msg);
+			if (data.success) {
+				await this.react(newMsg, emotes);
+				return true;
+			} else {
+				await this.sendBotPermissionErrorMessage(
+					msg,
+					this.botPermissions,
+					data
+				);
+				return false;
+			}
 		} else {
 			return false;
 		}
+	}
+
+	static parsePollOptions(content: string): PollOptionData {
+		const possibleOptions: PollOptions[] = [
+			"one",
+			"once",
+			"multi",
+			"multiple",
+		];
+		const foundOptions: PollOptions[] = [];
+
+		for (const option of possibleOptions) {
+			const hadThisOption = content.startsWith(`${option} `);
+			const lastPartOfMsg =
+				content.startsWith(option) &&
+				content[content.indexOf(option) + option.length + 1] ==
+					undefined;
+			if (hadThisOption || lastPartOfMsg) {
+				foundOptions.push(option);
+				content = content.replace(`${option} `, "");
+			}
+		}
+
+		return {
+			options: foundOptions,
+			content: content,
+		};
 	}
 
 	/**
@@ -232,18 +364,11 @@ export default class Poll extends BaseCommand {
 	 * @param silent Should the bot send an error?
 	 */
 	static async customParse(
-		msg: Message,
+		msg: DiscordMessage,
 		silent?: boolean
-	): Promise<
-		| {
-				onceMultipleOption: string;
-				question: string;
-				pollOptionArgs: string[];
-		  }
-		| undefined
-	> {
+	): Promise<PollParsedData | undefined> {
 		// Makes sure prefix, command, and args exist
-		if (!msg.args || !msg.prefix || !msg.command) {
+		if (!msg.args || msg.prefix == undefined || msg.command == undefined) {
 			if (!silent)
 				Logger.error(
 					`Poll.ts: Important elements (prefix, command, and/or args) not found`
@@ -251,37 +376,8 @@ export default class Poll extends BaseCommand {
 			return;
 		}
 
-		let newContent = msg.getArgsContent();
-		const newArgs = Message.getArgs(newContent, {
-			quoteSections: "flexible",
-		});
-
-		let onceMultipleOption = "";
-
-		const isOnce = newContent.startsWith("once");
-		const isMultiple = newContent.startsWith("multiple");
-		const isMulti = newContent.startsWith("multi");
-		const isOnceOrMultiple = isOnce || isMultiple || isMulti;
-
-		// Removes the once/multiple parma from newContent
-		if (isOnceOrMultiple) {
-			if (isOnce) {
-				onceMultipleOption = "once";
-			} else if (isMultiple) {
-				onceMultipleOption = "multiple";
-			} else if (isMulti) {
-				onceMultipleOption = "multi";
-			}
-
-			// Handles combined "once question"
-			newContent = newContent.replace(`${onceMultipleOption} `, ``);
-
-			// If there is no content now, the argument was alone before.
-			// This means we can remove it from args
-			if (newArgs[0].length == 0) {
-				newArgs.shift();
-			}
-		}
+		const data = this.parsePollOptions(msg.getArgsContent());
+		let newContent = data.content;
 
 		// Attempts to get arguments with a strict quote section mode in mind,
 		// while allowing for the question content to contain quotes.
@@ -290,7 +386,7 @@ export default class Poll extends BaseCommand {
 		let question = "";
 		let lastElementQuoted = false;
 		do {
-			detailedArgs = Message.getDetailedArgs(newContent, {
+			detailedArgs = BaseMessage.getDetailedArgs(newContent, {
 				quoteSections: "flexible",
 			});
 
@@ -338,31 +434,48 @@ export default class Poll extends BaseCommand {
 			}
 		} while (detailedArgs.length > 0);
 
-		const pollOptionArgs = Message.simplifyArgs(detailedArgs);
+		const userOptions = BaseMessage.simplifyArgs(detailedArgs);
 
 		// If there's no question, add one from the option arguments.
 		// Those come from questions inside quotes
 		if (question.length == 0) {
-			const newQuestion = pollOptionArgs.shift();
+			const newQuestion = userOptions.shift();
 			if (newQuestion) {
 				question = newQuestion;
 			}
 		}
 
-		Logger.silly(stripIndents`
-			new Poll.ts: 
-			newContent: '${newContent}'
-			newArgs: '${newArgs}'
-
+		Logger.silly(stripIndents`Poll command data:
 			question: '${question}'
-			onceMultipleOption: '${onceMultipleOption}'
-			pollOptionsArgs: [${pollOptionArgs}]
+			pollOptions: '${data.options}'
+			userOptions: [${userOptions}]
 		`);
 
 		return {
-			question,
-			onceMultipleOption,
-			pollOptionArgs,
+			pollOptions: data.options,
+			question: question,
+			userOptions: userOptions,
 		};
+	}
+
+	/**
+	 * Reacts to a Discord message
+	 *
+	 * @param msg Discord Message
+	 * @param reactions Reactions to add
+	 */
+	async react(msg: Discord.Message, reactions: string[]): Promise<void> {
+		// Does the reactions
+		for await (const emoji of reactions) {
+			if (!msg.reactions.cache.has(emoji)) {
+				if (msg.reactions.cache.size < Fun.discordMaxReactionCount) {
+					await msg.react(emoji);
+				} else {
+					Logger.warn(
+						`Can't react with ${emoji}; reactions are full`
+					);
+				}
+			}
+		}
 	}
 }

@@ -1,13 +1,18 @@
-import { BasePlugin, BaseEvent, Message, Logger } from "@framedjs/core";
-import Discord from "discord.js";
+import {
+	BaseEvent,
+	BaseMessage,
+	BasePlugin,
+	Discord,
+	Logger,
+} from "@framedjs/core";
 import Schedule from "node-schedule";
 
 export default class extends BaseEvent {
 	presences: Discord.PresenceData[] = [];
 	job: Schedule.Job | undefined;
 	presenceIndex = 0;
-	// cron = "*/30 * * * * *";
-	cron = "0 */1 * * * *";
+	cron = "*/30 * * * * *";
+	// cron = "*/15 * * * * *";
 
 	constructor(plugin: BasePlugin) {
 		super(plugin, {
@@ -45,28 +50,29 @@ export default class extends BaseEvent {
 	}
 
 	async build(): Promise<void> {
-		const help = await Message.format(
-			`$(command help) | @PollBotPlus help`,
+		const help = await BaseMessage.format(
+			`$(command default.bot.info help) | `,
 			this.client,
-			{ id: "default", platform: "none" }
+			{
+				id: "default",
+				platform: "none",
+			}
 		);
 
 		this.presences.push({
 			activity: {
-				name: help,
 				type: "PLAYING",
+				name: `${help}@PollBotPlus`,
 			},
-			status: "online",
 		});
 	}
 
 	async setPresence(presenceIndex = this.presenceIndex): Promise<void> {
-		Logger.debug(
-			`Setting activity to "${this.presences[presenceIndex].activity?.name}"`
-		);
-
 		if (this.discord) {
 			try {
+				Logger.silly(
+					`Setting activity to "${this.presences[presenceIndex].activity?.name}"`
+				);
 				await this.discord.client?.user?.setPresence(
 					this.presences[presenceIndex]
 				);
@@ -76,8 +82,6 @@ export default class extends BaseEvent {
 
 			// Increments number
 			this.presenceIndex = (presenceIndex + 1) % this.presences.length;
-		} else {
-			Logger.error("this.discord is undefined");
 		}
 	}
 }
