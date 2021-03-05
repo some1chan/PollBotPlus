@@ -1,5 +1,11 @@
 # PollBotPlus
 
+## 1.1.1
+
+### Patch Changes
+
+-   0d950a5: Fix missing dependency reflect-metadata
+
 ## 1.1.0
 
 ### Minor Changes
