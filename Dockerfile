@@ -49,5 +49,4 @@ COPY --from=build-stage /app/package.json /app/package.json
 COPY --from=build-stage /app/dist/ /app/dist/
 
 # Starts the app
-EXPOSE 42069
 CMD ["npm", "start"]
