@@ -1,6 +1,6 @@
 {
   "name": "pollbotplus",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A bot that lets you create  polls on Discord quickly, easily, and beautifully.",
   "main": "dist/index.js",
   "private": true,
@@ -32,7 +32,7 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "@framedjs/core": "^0.4.0",
+    "@framedjs/core": "^0.4.2",
     "@top-gg/sdk": "^3.0.9",
     "axios": "^0.21.1",
     "colors": "^1.4.0",
