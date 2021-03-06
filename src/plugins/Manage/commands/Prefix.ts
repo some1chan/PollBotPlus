@@ -31,6 +31,7 @@ export default class extends BaseCommand {
 				examples: true,
 			},
 			userPermissions: {
+				checkAutomatically: false,
 				discord: {
 					permissions: ["MANAGE_GUILD"],
 				},
@@ -40,6 +41,20 @@ export default class extends BaseCommand {
 
 	async run(msg: BaseMessage): Promise<boolean> {
 		if (msg.args && msg.args[0]) {
+			// Manual user permission check
+			const permsResult = this.checkUserPermissions(
+				msg,
+				this.userPermissions
+			);
+			if (!permsResult.success) {
+				await this.sendUserPermissionErrorMessage(
+					msg,
+					this.userPermissions,
+					permsResult
+				);
+				return false;
+			}
+
 			if (msg.args[0].length > 24) {
 				throw new FriendlyError(
 					`The prefix specified is too long (>24 characters)!`

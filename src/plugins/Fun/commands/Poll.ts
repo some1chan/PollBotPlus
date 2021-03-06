@@ -15,7 +15,7 @@ import { emotes, oneOptionMsg, optionEmotes } from "../Fun.plugin";
 import { oneLine, stripIndents } from "common-tags";
 import * as Fun from "../../Fun/Fun.plugin";
 
-type PollOptions = "one" | "once" | "multiple" | "multi";
+type PollOptions = "one" | "once" | "multiple" | "multi" | "single";
 
 interface PollParsedData {
 	question: string;
@@ -31,6 +31,14 @@ interface PollOptionData {
 const msgUrlKey = "msgUrl";
 
 export default class Poll extends BaseCommand {
+	static possibleOptions: PollOptions[] = [
+		"one",
+		"once",
+		"multi",
+		"multiple",
+		"single",
+	];
+
 	readonly originalBotPermissions: Discord.PermissionResolvable[];
 	readonly embedBotPermissions: Discord.PermissionResolvable[];
 	readonly oneBotOptionPermissions: Discord.PermissionResolvable[];
@@ -41,12 +49,12 @@ export default class Poll extends BaseCommand {
 			about: oneLine`Create a quick poll through Discord.`,
 			description: oneLine`Create a quick poll through Discord.
 			${process.env.PBP_DESCRIPTION_AD ?? ""}`,
-			usage: '[one] <question> [..."options"]',
+			usage: '[single] <question> [..."options"]',
 			hideUsageInHelp: true,
 			examples: stripIndents`
 			\`$(command ${plugin.id} poll) Do you like pancakes?\` - Simple poll
 			\`$(command ${plugin.id} poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
-			\`$(command ${plugin.id} poll) one ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose one`,
+			\`$(command ${plugin.id} poll) single ANIME'S REAL, RIGHT? "Real" "Not real"\` - Single vote poll`,
 			notes: stripIndents`
 			The \`one\` option will work unless the bot is momentarily offline.
 			${oneLine`For a lasting "choose only one" poll, please use a website like
@@ -154,9 +162,10 @@ export default class Poll extends BaseCommand {
 		msg: DiscordMessage,
 		parseResults: PollParsedData
 	): Promise<boolean> {
-		const hasOneOption =
+		const hasSingleOption =
 			parseResults.pollOptions.includes("once") ||
-			parseResults.pollOptions.includes("one");
+			parseResults.pollOptions.includes("one") ||
+			parseResults.pollOptions.includes("single");
 		const userOptions = parseResults.userOptions;
 		const question = parseResults.question;
 
@@ -245,7 +254,7 @@ export default class Poll extends BaseCommand {
 				.setDescription(
 					`${data}${description}${hasCodeBlock ? "" : "\n"}` +
 						`\nPoll by ${msg.discord.author}` +
-						`\n${hasOneOption ? oneOptionMsg : ""}`
+						`\n${hasSingleOption ? oneOptionMsg : ""}`
 				)
 				.setFooter("");
 
@@ -310,6 +319,9 @@ export default class Poll extends BaseCommand {
 					Logger.debug("Fetching message for poll");
 					await newMsg.fetch();
 				} catch (error) {
+					Logger.error(
+						"Poll.ts: Something went wrong when fetching the message:"
+					);
 					Logger.error(error);
 				}
 			}
@@ -332,15 +344,9 @@ export default class Poll extends BaseCommand {
 	}
 
 	static parsePollOptions(content: string): PollOptionData {
-		const possibleOptions: PollOptions[] = [
-			"one",
-			"once",
-			"multi",
-			"multiple",
-		];
 		const foundOptions: PollOptions[] = [];
 
-		for (const option of possibleOptions) {
+		for (const option of this.possibleOptions) {
 			const hadThisOption = content.startsWith(`${option} `);
 			const lastPartOfMsg =
 				content.startsWith(option) &&

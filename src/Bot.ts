@@ -5,22 +5,16 @@ const botName = "PollBotPlus";
 const startTime = process.hrtime();
 
 import "reflect-metadata";
-import {
-	APIManager,
-	Logger,
-	LoginOptions,
-	Utils,
-	version,
-} from "@framedjs/core";
+import { Logger, LoginOptions, Utils, version } from "@framedjs/core";
 import { CustomClient } from "./structures/CustomClient";
+import { DatabaseManager } from "./managers/DatabaseManager";
 import { TypeORMLogger } from "./logger/TypeORMLogger";
 import * as TypeORM from "typeorm";
 import Colors from "colors";
+import Topgg from "@top-gg/sdk";
 import Winston from "winston";
 import fs from "fs";
 import path from "path";
-import { DatabaseManager } from "./managers/DatabaseManager";
-import { CustomAPI } from "./structures/CustomAPI";
 
 // Sets up loggers
 Logger.level = process.env.LOGGER_LEVEL ? process.env.LOGGER_LEVEL : "silly";
@@ -130,7 +124,7 @@ async function start() {
 			api: false,
 			commands: false,
 			plugins: false,
-			provider: false
+			provider: false,
 		},
 		defaultPrefix: process.env.DEFAULT_PREFIX,
 		discord: {
@@ -170,29 +164,55 @@ async function start() {
 		`Done (${hrTimeElapsed}s)! ${botName} v${appVersion} (Framed.js v${version}) has been loaded.`
 	);
 
-	client.discord.client
-		?.generateInvite({
-			permissions: [
-				// Likely required for most bots
-				"SEND_MESSAGES",
+	if (client.discord.client) {
+		// Autoposter
+		if (process.env.TOP_GG_TOKEN) {
+			if (process.env.TOP_GG_SHARDING?.toLocaleLowerCase() != "true") {
+				return;
+			}
+			
+			Logger.info("Found top.gg token! Will try to auto-post stats.");
 
-				// Used in help command, but also allows the potential to use emojis from other servers
-				"USE_EXTERNAL_EMOJIS",
+			const discordClient = client.discord.client;
+			if (discordClient) {
+			}
 
-				// Used for getting old messages with polls, after a restart
-				"READ_MESSAGE_HISTORY",
+			const api = new Topgg.Api(process.env.TOP_GG_TOKEN);
+			setInterval(async () => {
+				await api.postStats({
+					serverCount: discordClient.guilds.cache.size,
+				});
+				Logger.info("Posted stats to top.gg");
+			}, 60 * 30 * 1000); // post every 30 minutes
+		} else {
+			Logger.warn("Couldn't find top.gg token!");
+		}
 
-				// Reactions and embeds needed for polls
-				"ADD_REACTIONS",
-				"EMBED_LINKS",
+		// Invite link
+		client.discord.client
+			.generateInvite({
+				permissions: [
+					// Likely required for most bots
+					"SEND_MESSAGES",
 
-				// Extra permissions for just-in-case
-				"MANAGE_MESSAGES",
-				"VIEW_CHANNEL",
-			],
-		})
-		.then(link => Logger.info(`Generated bot invite link:\n${link}`))
-		.catch(Logger.error);
+					// Used in help command, but also allows the potential to use emojis from other servers
+					"USE_EXTERNAL_EMOJIS",
+
+					// Used for getting old messages with polls, after a restart
+					"READ_MESSAGE_HISTORY",
+
+					// Reactions and embeds needed for polls
+					"ADD_REACTIONS",
+					"EMBED_LINKS",
+
+					// Extra permissions for just-in-case
+					"MANAGE_MESSAGES",
+					"VIEW_CHANNEL",
+				],
+			})
+			.then(link => Logger.info(`Generated bot invite link:\n${link}`))
+			.catch(Logger.error);
+	}
 }
 
 start();

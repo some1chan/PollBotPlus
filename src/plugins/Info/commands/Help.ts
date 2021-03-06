@@ -1,18 +1,26 @@
 /* eslint-disable no-mixed-spaces-and-tabs */
 import {
-	BasePlugin,
 	BaseCommand,
+	BaseMessage,
+	BasePlugin,
 	Discord,
+	DiscordMessage,
 	EmbedHelper,
+	HelpData,
+	FriendlyError,
 	InlineOptions,
 	Logger,
-	BaseMessage,
 	Place,
-	FriendlyError,
-	DiscordMessage,
 } from "@framedjs/core";
 import { oneLine, oneLineInlineLists, stripIndents } from "common-tags";
 import { CustomClient } from "../../../structures/CustomClient";
+
+const data: HelpData[] = [
+	{
+		group: "Commands",
+		commands: ["ping", "poll", "prefix", "usage"].sort(),
+	},
+];
 
 export default class Help extends BaseCommand {
 	constructor(plugin: BasePlugin) {
@@ -32,26 +40,64 @@ export default class Help extends BaseCommand {
 	async run(msg: BaseMessage): Promise<boolean> {
 		if (msg.args && msg instanceof DiscordMessage) {
 			const min = 1;
-			const max = 2;
+			const max = 3;
 			const pageNum = Math.min(
 				Math.max(min, Number(msg.args[0] ?? min)),
 				max
 			);
 
+			const place = await msg.getPlace();
+			let embed: Discord.MessageEmbed;
+
+			const commandStr = `$(command ${this.plugin.id} poll)`;
+			const newFooterText = this.client.formatting.formatCommandNotation(
+				`Page ${pageNum}/${max} - Use {{prefix}}{{id}} [page #] to view a new page.`,
+				this,
+				place
+			);
+
 			switch (pageNum) {
 				case 1:
-					await this.sendHelpAll(msg);
+					embed = EmbedHelper.getTemplate(
+						msg.discord,
+						await EmbedHelper.getCheckOutFooter(msg, this.id)
+					)
+						.setTitle("Welcome to PollBotPlus!")
+						.setDescription(
+							stripIndents`
+							PollBotPlus lets you to create polls on Discord quickly, easily, and beautifully.
+							To see all of what PollBotPlus can do, use \`$(command help) 2\`.`
+						)
+						.addFields([
+							{
+								name: "Quick Start",
+								/*
+								 * Pancakes     - OneShot (but barely)
+								 * Best Doki    - DDLC
+								 * Anime's real - Undertale
+								 */
+								value: stripIndents`
+								\`$(command poll) Do you like pancakes?\` - Simple poll
+								\`$(command poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
+								\`$(command poll) single ANIME'S REAL, RIGHT? "Real" "Not real"\` - Single vote poll`,
+							},
+							{
+								name: "Links",
+								value: stripIndents`
+								**[Support](https://discord.gg/RYbkcHfrnR)**  - Got any questions? Join the support server.
+								**[Invite](https://discord.com/api/oauth2/authorize?client_id=${this.client.discord.client?.user?.id}&permissions=355392&scope=bot)** - Want this bot on your own server? Invite the bot.
+								**[Vote](https://top.gg/bot/804245390642642965/vote)** - Want to support me for free? Vote for this bot.
+								**[Tip Me](https://ko-fi.com/pollbotplus)** - Want to support me financially? Tip me on Ko-Fi.
+								`,
+							},
+						])
+						.setFooter("Thank you for using PollBotPlus!");
+					await msg.discord.channel.send(
+						await this.client.formatting.formatEmbed(embed, place)
+					);
 					return true;
 				case 2:
-					const place = await msg.getPlace();
-					const commandStr = `$(command ${this.plugin.id} poll)`;
-					const newFooterText = this.client.formatting.formatCommandNotation(
-						`Page ${pageNum}/${max} - Use {{prefix}}{{id}} [page #] to view a new page.`,
-						this,
-						place
-					);
-
-					const embed = await this.client.formatting.formatEmbed(
+					embed = await this.client.formatting.formatEmbed(
 						EmbedHelper.getTemplate(
 							msg.discord,
 							await EmbedHelper.getCheckOutFooter(msg, this.id)
@@ -73,10 +119,33 @@ export default class Help extends BaseCommand {
 								"Markdown Formatting",
 								stripIndents`
 								To try this example, copy ALL the text below, and paste!
-								\`${commandStr} one Pizza or burger? \`
+								\`${commandStr} single Pizza or burger? \`
 								\`"🍕 **Pizza** \`\`\`Clearly the better option.\`\`\`"\`
 								\`"🍔 **Burger** \`\`\`Clearly the superior option.\`\`\`"\``
 							),
+						place
+					);
+					embed.setFooter(`${newFooterText}`, embed.footer?.iconURL);
+					await msg.discord.channel.send(embed);
+					break;
+				case 3:
+					const helpFields = await this.createHelpFields(data, place);
+
+					embed = await this.client.formatting.formatEmbed(
+						EmbedHelper.getTemplate(
+							msg.discord,
+							await EmbedHelper.getCheckOutFooter(msg, this.id)
+						)
+							.setTitle("More Information")
+							.addFields([
+								{
+									name: "Changing the Prefix",
+									value: oneLine`To change this bot's prefix, use \`$(command prefix)\`.
+									If you ever forget what this bot's prefix is, you can always use
+									\`@PollBotPlus prefix\` to find and change it.`,
+								},
+								...helpFields,
+							]),
 						place
 					);
 					embed.setFooter(`${newFooterText}`, embed.footer?.iconURL);
@@ -95,73 +164,6 @@ export default class Help extends BaseCommand {
 						}
 					}
 			}
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Shows the help message for all commands
-	 * @param msg Framed message
-	 */
-	private async sendHelpAll(msg: BaseMessage): Promise<boolean> {
-		if (msg.discord) {
-			const unformattedEmbed = EmbedHelper.getTemplate(
-				msg.discord,
-				await EmbedHelper.getCheckOutFooter(msg, this.id)
-			)
-				.setTitle("Welcome to PollBotPlus!")
-				.setDescription(
-					stripIndents`
-					PollBotPlus lets you to create polls on Discord quickly, easily, and beautifully.
-
-					To get started, check the **Quick Start**. Try copying, editing, and pasting them!
-					To see the rest of what PollBotPlus can do, use \`$(command help) 2\`.`
-				)
-				.addFields([
-					{
-						name: "Quick Start",
-						/*
-						 * Pancakes     - OneShot (but barely)
-						 * Best Doki    - DDLC
-						 * Anime's real - Undertale
-						 */
-						value: stripIndents`
-						\`$(command poll) Do you like pancakes?\` - Simple poll
-						\`$(command poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
-						\`$(command poll) one ANIME'S REAL, RIGHT? "Real" "Not real"\` - Choose one
-						`,
-					},
-					{
-						name: "Changing the Prefix",
-						value: oneLine`To change this bot's prefix, use \`$(command prefix)\`.
-						If you ever forget what this bot's prefix is, you can always use
-						\`@PollBotPlus prefix\` to find and change it.`,
-					},
-					// {
-					// 	name: `Support the Bot!`,
-					// 	value: oneLine`
-					// 		To get PollBotPlus Premium, click [here](https://patreon.com/some1chan). This helps
-					// 		[@some1chan](https://twitter.com/some1chan) develop and
-					// 		maintain cool bots like these, and pay for server costs!`,
-					// },
-					{
-						name: "Links",
-						value: stripIndents`
-						**[Support Server](https://discord.gg/RYbkcHfrnR)**  - Got any questions? Join the support server.
-						**[Bot Invite](https://discord.com/api/oauth2/authorize?client_id=${this.client.discord.client?.user?.id}&permissions=355392&scope=bot)** - Want this bot on your own server? Invite the bot.
-						**[Vote on top.gg](https://top.gg/bot/804245390642642965)** - Want to support me for free? Vote for this bot.
-						**[Support Me](https://ko-fi.com/pollbotplus)** - Want to support me financially? Tip me on Ko-Fi!
-						`,
-					},
-				])
-				.setFooter("Thank you for using PollBotPlus!");
-			const embed = await this.client.formatting.formatEmbed(
-				unformattedEmbed,
-				await msg.getPlace()
-			);
-
-			await msg.discord.channel.send(embed);
 			return true;
 		}
 		return false;
@@ -403,5 +405,142 @@ export default class Help extends BaseCommand {
 
 		// If command.inline isn't set/was undefined, return false
 		return false;
+	}
+
+	/**
+	 * Creates Discord embed field data from plugin commands, showing commands.
+	 *
+	 * @param helpList Data to choose certain commands
+	 * @param place Place data
+	 *
+	 * @returns Discord embed field data, containing brief info on commands
+	 */
+	async createHelpFields(
+		helpList: HelpData[],
+		place: Place
+	): Promise<Discord.EmbedFieldData[]> {
+		const fields: Discord.EmbedFieldData[] = [];
+		const entries = new Map<
+			/** Command ID */
+			string,
+			{
+				description: string;
+				group: string;
+				small: boolean;
+			}
+		>();
+
+		const groupIconMap = new Map<string, string>();
+		const pluginCommandMap = new Map<string, BaseCommand[]>();
+
+		// Combine both commands and aliases into one variable
+		// Then, set them all into the map
+		this.client.plugins.map.forEach(plugin => {
+			const pluginCommands = Array.from(plugin.commands.values());
+			pluginCommandMap.set(plugin.id, pluginCommands);
+		});
+
+		// Gets all plugin command and alias references, along
+		// with exhausting all possible categories
+		for (const baseCommands of pluginCommandMap.values()) {
+			// Gets all the groups and their icons
+			for (const baseCommand of baseCommands) {
+				groupIconMap.set(
+					baseCommand.group,
+					baseCommand.groupEmote ? baseCommand.groupEmote : "❔"
+				);
+			}
+
+			// Goes through all of the help elements
+			for (const helpElement of helpList) {
+				// Check in each command in array
+				for (const commandElement of helpElement.commands) {
+					const args = BaseMessage.getArgs(commandElement);
+					const command = args.shift();
+
+					if (command == undefined) {
+						throw new Error("command is null or undefined");
+					}
+
+					const foundData = (
+						await this.client.commands.getFoundCommandData(
+							command,
+							args,
+							place
+						)
+					)[0];
+
+					// If there's a command found,
+					if (foundData) {
+						const commandString = this.client.formatting.getCommandRan(
+							foundData,
+							place
+						);
+						const lastSubcommand =
+							foundData.subcommands[
+								foundData.subcommands.length - 1
+							];
+						const baseCommand = lastSubcommand
+							? lastSubcommand
+							: foundData.command;
+
+						const usage =
+							baseCommand.usage && !baseCommand.hideUsageInHelp
+								? ` ${baseCommand.usage}`
+								: "";
+						const about = baseCommand.about
+							? ` - ${baseCommand.about}\n`
+							: " ";
+						entries.set(commandElement, {
+							group: baseCommand.groupEmote
+								? baseCommand.groupEmote
+								: "Unknown",
+							description: `\`${commandString}${usage}\`${about}`,
+							small: baseCommand.about != undefined,
+						});
+					}
+				}
+			}
+		}
+
+		// Clones arrays to get a new help list, and a list of unparsed commands.
+		const clonedHelpList: HelpData[] = JSON.parse(JSON.stringify(helpList));
+
+		// Loops through all of the help elements,
+		// in order to sort them properly like in the data
+		for (let i = 0; i < clonedHelpList.length; i++) {
+			const helpElement = clonedHelpList[i];
+
+			let description = "";
+			let smallCommands = "";
+			let icon = groupIconMap.get(helpElement.group);
+
+			if (!icon) {
+				icon = groupIconMap.get("Other");
+				if (!icon) {
+					icon = "";
+				}
+			}
+
+			// Goes through each command in help, and finds matches in order
+			helpElement.commands.forEach(command => {
+				const text = entries.get(command);
+				if (text) {
+					if (!text.small) {
+						description += `${text.description}`;
+					} else {
+						smallCommands += `${text.description}`;
+					}
+				}
+			});
+
+			// Push everything from this group into a Embed field
+			fields.push({
+				name: `${icon} ${helpElement.group}`,
+				value: `${description}${smallCommands}`,
+			});
+		}
+
+		return fields;
 	}
 }

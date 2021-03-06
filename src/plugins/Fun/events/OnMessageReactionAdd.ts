@@ -41,9 +41,9 @@ export default class extends BaseEvent {
 				await reaction.fetch();
 			} catch (error) {
 				Logger.error(
-					"Something went wrong when fetching the message: ",
-					error.stack
+					"OnMessageReactionAdd.ts: Something went wrong when fetching the message:"
 				);
+				Logger.error(error.stack);
 				return;
 			}
 		}

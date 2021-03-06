@@ -4,7 +4,6 @@ import {
 	Logger,
 	BaseMessage,
 	Utils,
-	Place,
 } from "@framedjs/core";
 import { DatabaseManager } from "./DatabaseManager";
 import Command from "../database/entities/Command";
@@ -50,7 +49,7 @@ export class CustomCommandManager extends CommandManager {
 		}
 
 		try {
-			if (msg.prefix && msg.command != undefined) {
+			if (msg.prefix != undefined && msg.command != undefined) {
 				const place = await msg.getPlace();
 				if (place) {
 					// Attempts to runs commands through database

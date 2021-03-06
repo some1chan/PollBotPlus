@@ -59,11 +59,11 @@ export default class extends BaseCommand {
 				- OS/Arch:      ${osArch}
 				- Environment:  ${nodeEnvironment}
 				${codeblock}${codeblock}yml
-				Framed.js Bot:
+				Bot:
 				- Uptime:       ${uptimeText}
 				- RAM Usage:    ${ramUsageText} MiB
-				- Back-End:     ${backEnd}
 				- Bot Version:  ${botVersion}
+				- Framed.js:    ${backEnd}
 				${codeblock}
 				`);
 			await msg.discord.channel.send(embed);
