@@ -1,5 +1,15 @@
 # PollBotPlus
 
+## 1.2.3
+
+### Patch Changes
+
+-   826e0aa: Release 1.2.3
+
+    Bugfixes:
+
+    -   Fixed notes in prefix for renaming the "one" option to "single"
+
 ## 1.2.2
 
 ### Patch Changes
