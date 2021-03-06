@@ -22,7 +22,7 @@ export default class extends BaseCommand {
 			\`{{prefix}}{{id}} "pls "\`
 			`,
 			notes: oneLine`
-			By changing the prefix, simple polls with the \`one\` option won't work.
+			By changing the prefix, simple polls with the \`single\` option won't work.
 			If those polls need to keep working, edit that message to use your new prefix.
 			Embed polls aren't affected by prefix changes.
 			`,
