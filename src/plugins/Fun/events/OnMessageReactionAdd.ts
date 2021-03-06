@@ -169,7 +169,7 @@ export default class extends BaseEvent {
 					}
 				} else {
 					await newMsg.send(
-						"The `one` option isn't supported in DMs!"
+						"The `single` option isn't supported in DMs!"
 					);
 				}
 			} catch (error) {
