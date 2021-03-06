@@ -92,7 +92,8 @@ export default class extends BaseEvent {
 			embedDescription?.endsWith(oneOptionMsg.toLocaleLowerCase()) ||
 			embedDescription?.endsWith(onceOptionMsg.toLocaleLowerCase()) ||
 			parsedResults?.pollOptions.includes("once") ||
-			parsedResults?.pollOptions.includes("one");
+			parsedResults?.pollOptions.includes("one") ||
+			parsedResults?.pollOptions.includes("single");
 
 		const isPollCommand =
 			reaction.message.content.startsWith(commandRan) ||
