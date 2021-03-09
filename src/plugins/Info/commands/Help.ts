@@ -18,7 +18,7 @@ import { CustomClient } from "../../../structures/CustomClient";
 const data: HelpData[] = [
 	{
 		group: "Commands",
-		commands: ["ping", "poll", "prefix", "usage"].sort(),
+		commands: ["help", "ping", "poll", "prefix"].sort(),
 	},
 ];
 
@@ -34,6 +34,11 @@ export default class Help extends BaseCommand {
 				\`{{prefix}}{{id}} poll\`
 				`,
 			inline: true,
+			botPermissions: {
+				discord: {
+					permissions: ["EMBED_LINKS", "SEND_MESSAGES"],
+				},
+			},
 		});
 	}
 
@@ -58,6 +63,21 @@ export default class Help extends BaseCommand {
 
 			switch (pageNum) {
 				case 1:
+					const pollCommand = this.client.commands.commandsArray.find(
+						a => a.fullId === "default.bot.fun.command.poll"
+					);
+					let quickStart = pollCommand?.examples;
+
+					if (!quickStart) {
+						Logger.warn(
+							"Something went wrong with finding the poll command's examples"
+						);
+						quickStart = stripIndents`
+						\`$(command poll) Do you like pancakes?\` - Simple poll
+						\`$(command poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
+						\`$(command poll) single "ANIME'S REAL, RIGHT?" "Real" "Not real"\` - Single vote poll`;
+					}
+
 					embed = EmbedHelper.getTemplate(
 						msg.discord,
 						await EmbedHelper.getCheckOutFooter(msg, this.id)
@@ -71,15 +91,7 @@ export default class Help extends BaseCommand {
 						.addFields([
 							{
 								name: "Quick Start",
-								/*
-								 * Pancakes     - OneShot (but barely)
-								 * Best Doki    - DDLC
-								 * Anime's real - Undertale
-								 */
-								value: stripIndents`
-								\`$(command poll) Do you like pancakes?\` - Simple poll
-								\`$(command poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
-								\`$(command poll) single ANIME'S REAL, RIGHT? "Real" "Not real"\` - Single vote poll`,
+								value: quickStart,
 							},
 							{
 								name: "Links",
@@ -122,6 +134,15 @@ export default class Help extends BaseCommand {
 								\`${commandStr} single Pizza or burger? \`
 								\`"🍕 **Pizza** \`\`\`Clearly the better option.\`\`\`"\`
 								\`"🍔 **Burger** \`\`\`Clearly the superior option.\`\`\`"\``
+							)
+							.addField(
+								"Quotation Marks",
+								stripIndents`
+								${oneLine`If you want to put quotes in your question or
+								options, use backslashes! If there's a pair of quotes in
+								the question, and there's text surrounding it, they're optional.`}
+								\`${commandStr} Here's quote (\\") characters! "Option with a \\"" "Neat!"\`
+								\`${commandStr} Here's a "question" with quotes!\``
 							),
 						place
 					);
