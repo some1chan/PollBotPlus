@@ -41,7 +41,7 @@ export default class Poll extends BaseCommand {
 
 	readonly originalBotPermissions: Discord.PermissionResolvable[];
 	readonly embedBotPermissions: Discord.PermissionResolvable[];
-	readonly oneBotOptionPermissions: Discord.PermissionResolvable[];
+	readonly singleOptionPermissions: Discord.PermissionResolvable[];
 
 	constructor(plugin: BasePlugin) {
 		super(plugin, {
@@ -54,15 +54,19 @@ export default class Poll extends BaseCommand {
 			examples: stripIndents`
 			\`$(command ${plugin.id} poll) Do you like pancakes?\` - Simple poll
 			\`$(command ${plugin.id} poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
-			\`$(command ${plugin.id} poll) single ANIME'S REAL, RIGHT? "Real" "Not real"\` - Single vote poll`,
+			\`$(command ${plugin.id} poll) single "ANIME'S REAL, RIGHT?" "Real" "Not real"\` - Single vote poll`,
 			notes: stripIndents`
-			The \`one\` option will work unless the bot is momentarily offline.
+			The \`single\` option will work unless the bot is momentarily offline.
 			${oneLine`For a lasting "choose only one" poll, please use a website like
 			[strawpoll.me](https://strawpoll.me) instead!`}`,
 			botPermissions: {
 				checkAutomatically: false,
 				discord: {
-					permissions: ["SEND_MESSAGES", "ADD_REACTIONS"],
+					permissions: [
+						"SEND_MESSAGES",
+						"ADD_REACTIONS",
+						"READ_MESSAGE_HISTORY",
+					],
 				},
 			},
 		});
@@ -70,7 +74,7 @@ export default class Poll extends BaseCommand {
 		this.originalBotPermissions =
 			this.botPermissions?.discord?.permissions ?? [];
 		this.embedBotPermissions = ["EMBED_LINKS"];
-		this.oneBotOptionPermissions = ["MANAGE_MESSAGES"];
+		this.singleOptionPermissions = ["MANAGE_MESSAGES"];
 	}
 
 	async run(msg: BaseMessage): Promise<boolean> {
@@ -78,11 +82,11 @@ export default class Poll extends BaseCommand {
 			const parseResults = await Poll.customParse(msg);
 			if (!parseResults) return false;
 
-			const pollOptionArgs = parseResults.userOptions;
+			const userOptions = parseResults.userOptions;
 			const questionContent = parseResults.question.trim();
 
 			// If there some poll options
-			if (pollOptionArgs.length >= 1) {
+			if (userOptions.length >= 1) {
 				return this.createEmbedPoll(msg, parseResults);
 			} else if (questionContent?.length > 0) {
 				return this.createSimplePoll(msg);
@@ -169,7 +173,12 @@ export default class Poll extends BaseCommand {
 		const userOptions = parseResults.userOptions;
 		const question = parseResults.question;
 
-		if (userOptions.length == 1) {
+		// Throws a friendly error if there's no question, but there's two options.
+		if (!question) {
+			throw new FriendlyError(
+				oneLine`${msg.discord.author}, there's ${userOptions.length} options but there's no question!`
+			);
+		} else if (userOptions.length == 1) {
 			throw new FriendlyError(
 				`${msg.discord.author}, you need at least more than one option!`
 			);
@@ -302,7 +311,15 @@ export default class Poll extends BaseCommand {
 		}
 
 		// Does the reactions
-		await newMsg.fetch();
+		const permResults = this.checkBotPermissions(msg, {
+			discord: {
+				permissions: [
+					...this.originalBotPermissions,
+					...this.singleOptionPermissions,
+				],
+			},
+		});
+		if (permResults.success) await newMsg.fetch();
 		await this.react(newMsg, reactionEmotes);
 		return true;
 	}
@@ -443,8 +460,9 @@ export default class Poll extends BaseCommand {
 		const userOptions = BaseMessage.simplifyArgs(detailedArgs);
 
 		// If there's no question, add one from the option arguments.
-		// Those come from questions inside quotes
-		if (question.length == 0) {
+		// Those come from questions inside quotes.
+		// BUT if the user options isn't sufficient for it, we don't do this
+		if (question.length == 0 && userOptions.length != 2) {
 			const newQuestion = userOptions.shift();
 			if (newQuestion) {
 				question = newQuestion;
@@ -475,7 +493,11 @@ export default class Poll extends BaseCommand {
 		for await (const emoji of reactions) {
 			if (!msg.reactions.cache.has(emoji)) {
 				if (msg.reactions.cache.size < Fun.discordMaxReactionCount) {
-					await msg.react(emoji);
+					try {
+						await msg.react(emoji);
+					} catch (error) {
+						Logger.error(error);
+					}
 				} else {
 					Logger.warn(
 						`Can't react with ${emoji}; reactions are full`

@@ -175,7 +175,14 @@ export default class extends BaseEvent {
 				}
 			} catch (error) {
 				if (error instanceof FriendlyError) {
-					const embed = EmbedHelper.getTemplate(reaction.message)
+					const embed = EmbedHelper.getTemplate(
+						reaction.message,
+						await EmbedHelper.getCheckOutFooter(
+							this.client.formatting,
+							place,
+							this.client.footer
+						)
+					)
 						.setTitle(error.friendlyName)
 						.setDescription(error.message);
 					await reaction.message.channel.send(embed);
