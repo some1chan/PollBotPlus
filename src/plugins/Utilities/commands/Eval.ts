@@ -8,11 +8,23 @@ export default class extends BaseCommand {
 			usage: "<code>",
 			userPermissions: {
 				botOwnersOnly: true,
+				checkAutomatically: false,
 			},
 		});
 	}
 
 	async run(msg: BaseMessage): Promise<boolean> {
+		// Manually checks user permission to stay silent
+		const permsResult = this.checkUserPermissions(
+			msg,
+			this.userPermissions
+		);
+		if (!permsResult.success) {
+			Logger.warn("SetAvatar called by non-bot user");
+			return false;
+		}
+
+		// Double checks because why not
 		if (msg.discord?.author.id != "200340393596944384") {
 			// not me, ABORT
 			Logger.warn(

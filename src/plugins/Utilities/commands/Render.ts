@@ -30,11 +30,21 @@ export default class extends BaseCommand {
 			`,
 			userPermissions: {
 				botOwnersOnly: true,
+				checkAutomatically: false,
 			},
 		});
 	}
 
 	async run(msg: BaseMessage): Promise<boolean> {
+		// Manually checks user permission to stay silent
+		const permsResult = this.checkUserPermissions(
+			msg,
+			this.userPermissions
+		);
+		if (!permsResult.success) {
+			return false;
+		}
+
 		if (msg.discord && msg.args && msg.command) {
 			let newContents = msg.getArgsContent();
 

@@ -16,6 +16,7 @@ export default class extends BaseCommand {
 			\`{{prefix}}{{id}} This ~~is~~ a **test**!\``,
 			userPermissions: {
 				botOwnersOnly: true,
+				checkAutomatically: false,
 			},
 			inline: true,
 			// hideUsageInHelp: true,
@@ -23,6 +24,15 @@ export default class extends BaseCommand {
 	}
 
 	async run(msg: BaseMessage): Promise<boolean> {
+		// Manually checks user permission to stay silent
+		const permsResult = this.checkUserPermissions(
+			msg,
+			this.userPermissions
+		);
+		if (!permsResult.success) {
+			return false;
+		}
+
 		if (msg.discord?.guild && msg.args) {
 			const parse = await Raw.getNewMessage(msg, true);
 			return await Raw.showStrippedMessage(

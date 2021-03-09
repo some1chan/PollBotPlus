@@ -19,13 +19,20 @@ export default class Link extends BaseCommand {
 			usage: "[id|link|content]",
 			userPermissions: {
 				botOwnersOnly: true,
+				checkAutomatically: false,
 			},
 		});
 	}
 
 	async run(msg: BaseMessage): Promise<boolean> {
-		if (!(process.env.USE_MARKDOWN_COMMANDS?.toLocaleLowerCase() == "true"))
+		// Manually checks user permission to stay silent
+		const permsResult = this.checkUserPermissions(
+			msg,
+			this.userPermissions
+		);
+		if (!permsResult.success) {
 			return false;
+		}
 
 		if (msg.discord) {
 			const parse = await Raw.getNewMessage(msg);
