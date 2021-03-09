@@ -1,5 +1,15 @@
 # PollBotPlus
 
+## 1.2.5
+
+### Patch Changes
+
+-   80dbe62: Release 1.2.5
+
+    Bugfixes:
+
+    -   Top.gg automatic posting (hopefully)
+
 ## 1.2.4
 
 ### Patch Changes
