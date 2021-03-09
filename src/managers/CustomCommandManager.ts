@@ -38,6 +38,17 @@ export class CustomCommandManager extends CommandManager {
 	 * @param msg Message object
 	 */
 	async run(msg: BaseMessage): Promise<Map<string, boolean>> {
+		if (process.env.ERROR_TESTS_ON_PROD?.toLocaleLowerCase() == "true") {
+			if (
+				!(
+					msg.discord?.guild?.available &&
+					msg.discord?.guild?.id == process.env.ERROR_TESTS_GUILD
+				)
+			) {
+				return new Map();
+			}
+		}
+
 		const startTime = process.hrtime();
 
 		// Handles BaseCommand and BaseSubcommands, and stores the results in a variable
