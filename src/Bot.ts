@@ -11,7 +11,7 @@ import { DatabaseManager } from "./managers/DatabaseManager";
 import { TypeORMLogger } from "./logger/TypeORMLogger";
 import * as TypeORM from "typeorm";
 import Colors from "colors";
-import Topgg from "@top-gg/sdk";
+import { Api as TopggApi } from "@top-gg/sdk";
 import Winston from "winston";
 import fs from "fs";
 import path from "path";
@@ -57,7 +57,7 @@ async function start() {
 	Logger.info(
 		`Starting ${botName} v${appVersion}, currently running Framed.js v${version}.`
 	);
-	Logger.verbose(`${Utils.hrTimeElapsed(startTime)}s - Loaded imports.`);
+	Logger.verbose(`${importTime}s - Loaded imports.`);
 
 	// Get connection options, and adds the logger
 	let connectionOptions: TypeORM.ConnectionOptions;
@@ -170,14 +170,14 @@ async function start() {
 			if (process.env.TOP_GG_SHARDING?.toLocaleLowerCase() == "true") {
 				return;
 			}
-			
+
 			Logger.info("Found top.gg token! Will try to auto-post stats.");
 
 			const discordClient = client.discord.client;
 			if (discordClient) {
 			}
 
-			const api = new Topgg.Api(process.env.TOP_GG_TOKEN);
+			const api = new TopggApi(process.env.TOP_GG_TOKEN);
 			setInterval(async () => {
 				await api.postStats({
 					serverCount: discordClient.guilds.cache.size,
