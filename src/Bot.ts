@@ -182,7 +182,7 @@ async function start() {
 				await api.postStats({
 					serverCount: discordClient.guilds.cache.size,
 				});
-				Logger.info("Posted stats to top.gg");
+				Logger.info(`Posted stats to top.gg - serverCount: ${discordClient.guilds.cache.size}`);
 			}, 60 * 30 * 1000); // post every 30 minutes
 		} else {
 			Logger.warn("Couldn't find top.gg token!");
