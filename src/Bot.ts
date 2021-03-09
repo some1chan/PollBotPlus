@@ -167,7 +167,7 @@ async function start() {
 	if (client.discord.client) {
 		// Autoposter
 		if (process.env.TOP_GG_TOKEN) {
-			if (process.env.TOP_GG_SHARDING?.toLocaleLowerCase() != "true") {
+			if (process.env.TOP_GG_SHARDING?.toLocaleLowerCase() == "true") {
 				return;
 			}
 			
