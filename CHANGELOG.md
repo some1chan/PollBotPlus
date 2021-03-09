@@ -1,5 +1,20 @@
 # PollBotPlus
 
+## 1.2.4
+
+### Patch Changes
+
+-   af2337e: Release 1.2.4
+
+    Features:
+
+    -   More info in the help command
+
+    Bugfixes:
+
+    -   Better emoji detection and parsing
+    -   Better errors for the user and back-end
+
 ## 1.2.3
 
 ### Patch Changes
