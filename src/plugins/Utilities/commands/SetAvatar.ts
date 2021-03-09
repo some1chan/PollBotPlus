@@ -27,9 +27,12 @@ export default class extends BaseCommand {
 			this.userPermissions
 		);
 		if (!permsResult.success) {
-			Logger.warn("SetAvatar called by non-bot user");
+			Logger.warn(
+				`${this.id} called by non-bot user (${msg.discord?.author.id})`
+			);
 			return false;
 		}
+
 
 		if (msg instanceof DiscordMessage) {
 			const argsContent = msg.getArgsContent();

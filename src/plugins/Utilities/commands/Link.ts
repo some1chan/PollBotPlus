@@ -31,6 +31,9 @@ export default class Link extends BaseCommand {
 			this.userPermissions
 		);
 		if (!permsResult.success) {
+			Logger.warn(
+				`${this.id} called by non-bot user (${msg.discord?.author.id})`
+			);
 			return false;
 		}
 

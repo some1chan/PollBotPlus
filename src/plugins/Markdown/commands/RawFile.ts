@@ -1,5 +1,5 @@
 /* eslint-disable no-mixed-spaces-and-tabs */
-import { BaseCommand, BaseMessage, BasePlugin } from "@framedjs/core";
+import { BaseCommand, BaseMessage, BasePlugin, Logger } from "@framedjs/core";
 import { stripIndent } from "common-tags";
 import Raw from "./Raw";
 
@@ -30,6 +30,9 @@ export default class extends BaseCommand {
 			this.userPermissions
 		);
 		if (!permsResult.success) {
+			Logger.warn(
+				`${this.id} called by non-bot user (${msg.discord?.author.id})`
+			);
 			return false;
 		}
 
