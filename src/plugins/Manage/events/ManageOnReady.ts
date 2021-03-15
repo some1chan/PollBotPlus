@@ -4,6 +4,7 @@ import {
 	BasePlugin,
 	Discord,
 	Logger,
+	Place,
 } from "@framedjs/core";
 import Schedule from "node-schedule";
 
@@ -12,7 +13,6 @@ export default class extends BaseEvent {
 	job: Schedule.Job | undefined;
 	presenceIndex = 0;
 	cron = "*/30 * * * * *";
-	// cron = "*/15 * * * * *";
 
 	constructor(plugin: BasePlugin) {
 		super(plugin, {
@@ -50,21 +50,53 @@ export default class extends BaseEvent {
 	}
 
 	async build(): Promise<void> {
+		const place: Place = {
+			id: "default",
+			platform: "discord",
+		};
+
 		const help = await BaseMessage.format(
 			`$(command default.bot.info help) | `,
 			this.client,
-			{
-				id: "default",
-				platform: "none",
-			}
+			place
 		);
 
-		this.presences.push({
-			activity: {
-				type: "PLAYING",
-				name: `${help}@PollBotPlus`,
+		const invite = await BaseMessage.format(
+			`$(command invite) | `,
+			this.client,
+			place
+		);
+		const support = await BaseMessage.format(
+			`$(command support) | `,
+			this.client,
+			place
+		);
+		const vote = await BaseMessage.format(
+			`$(command vote) | `,
+			this.client,
+			place
+		);
+
+		this.presences.push(
+			{
+				activity: {
+					type: "PLAYING",
+					name: `${help}@PollBotPlus`,
+				},
 			},
-		});
+			{
+				activity: {
+					type: "PLAYING",
+					name: `${invite}@PollBotPlus`,
+				},
+			},
+			{
+				activity: {
+					type: "PLAYING",
+					name: `${vote}@PollBotPlus`,
+				},
+			}
+		);
 	}
 
 	async setPresence(presenceIndex = this.presenceIndex): Promise<void> {
