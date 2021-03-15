@@ -1,5 +1,5 @@
 dependencies:
-  '@framedjs/core': 0.4.3_46f8f1c1a51a032b23fa17d66ac665ea
+  '@framedjs/core': 0.5.0_46f8f1c1a51a032b23fa17d66ac665ea
   '@top-gg/sdk': 3.0.9
   axios: 0.21.1
   colors: 1.4.0
@@ -343,7 +343,7 @@ packages:
       node: '>= 6'
     resolution:
       integrity: sha512-ZfFsbgEXW71Rw/6EtBdrP5VxBJy4dthyC0tpQKGKmYFImlmmrykO14Za+BiIVduwjte0jXEBlhSKf0MWbFp9Eg==
-  /@framedjs/core/0.4.3_46f8f1c1a51a032b23fa17d66ac665ea:
+  /@framedjs/core/0.5.0_46f8f1c1a51a032b23fa17d66ac665ea:
     dependencies:
       '@framedjs/logger': 0.1.0
       '@framedjs/shared': 0.2.0
@@ -353,7 +353,7 @@ packages:
       emoji-regex: 9.2.2
       koa: 2.13.1
       koa-router: 10.0.0
-      nanoid: 3.1.20
+      nanoid: 3.1.21
       node-emoji: 1.10.0
       reflect-metadata: 0.1.13
       require-all: 3.0.0
@@ -369,7 +369,7 @@ packages:
       twitch-auth: ^4.4.0
       twitch-chat-client: ^4.4.0
     resolution:
-      integrity: sha512-9MYNV80mnAQXeYeUowJLg6r4Jj6JfDZhNqWwXQhAFEwHtaMkyBVMNqYIbKvuDMnPOtsqGhv1gAj2ox1uXlPBHQ==
+      integrity: sha512-oAKJvf1GNyZQnDdLjGEknEiOaf2Hvs39eD9Opq19v2vKju6ERaXRb6JJ5PcnKvM1sdLUretpa9jduaWVw0fB8Q==
   /@framedjs/logger/0.1.0:
     dependencies:
       colors: 1.4.0
@@ -1866,6 +1866,18 @@ packages:
       node: '>= 0.6'
     resolution:
       integrity: sha512-ZTTX0MWrsQ2ZAhA1cejAwDLycFsd7I7nVtnkT3Ol0aqodaKW+0CTZDQ1uBv5whptCnc8e8HeRRJxRs0kmm/Qfw==
+  /http-errors/1.8.0:
+    dependencies:
+      depd: 1.1.2
+      inherits: 2.0.4
+      setprototypeof: 1.2.0
+      statuses: 1.5.0
+      toidentifier: 1.0.0
+    dev: false
+    engines:
+      node: '>= 0.6'
+    resolution:
+      integrity: sha512-4I8r0C5JDhT5VkvI47QktDW75rNlGVsUf/8hzjCC/wkWI/jdTRmBb9aI7erSG82r1bjKY3F6k28WnsVxB1C73A==
   /http-signature/1.2.0:
     dependencies:
       assert-plus: 1.0.0
@@ -2285,7 +2297,7 @@ packages:
   /koa-router/10.0.0:
     dependencies:
       debug: 4.3.1
-      http-errors: 1.7.3
+      http-errors: 1.8.0
       koa-compose: 4.1.0
       methods: 1.1.2
       path-to-regexp: 6.2.0
@@ -2309,7 +2321,7 @@ packages:
       escape-html: 1.0.3
       fresh: 0.5.2
       http-assert: 1.4.1
-      http-errors: 1.7.3
+      http-errors: 1.8.0
       is-generator-function: 1.0.8
       koa-compose: 4.1.0
       koa-convert: 1.2.0
@@ -2592,13 +2604,13 @@ packages:
     optional: true
     resolution:
       integrity: sha512-M2ufzIiINKCuDfBSAUr1vWQ+vuVcA9kqx8JJUsbQi6yf1uGRyb7HfpdfUr5qLXf3B/t8dPvcjhKMmlfnP47EzQ==
-  /nanoid/3.1.20:
+  /nanoid/3.1.21:
     dev: false
     engines:
       node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1
     hasBin: true
     resolution:
-      integrity: sha512-a1cQNyczgKbLX9jwbS/+d7W8fX/RfgYR7lVWwWOGIPNgK2m0MWvrGF6/m4kk6U3QcFMnZf3RIhL0v2Jgh/0Uxw==
+      integrity: sha512-A6oZraK4DJkAOICstsGH98dvycPr/4GGDH7ZWKmMdd3vGcOurZ6JmWFUt0DA5bzrrn2FrUjmv6mFNWvv8jpppA==
   /needle/2.6.0:
     dependencies:
       debug: 3.2.7
@@ -3377,6 +3389,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-JvdAWfbXeIGaZ9cILp38HntZSFSo3mWg6xGcJJsd+d4aRMOqauag1C63dJfDw7OaMYwEbHMOxEZ1lqVRYP2OAw==
+  /setprototypeof/1.2.0:
+    dev: false
+    resolution:
+      integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==
   /sha.js/2.4.11:
     dependencies:
       inherits: 2.0.4
@@ -4339,7 +4355,7 @@ packages:
     version: 0.1.3
 specifiers:
   '@changesets/cli': ^2.14.1
-  '@framedjs/core': ^0.4.3
+  '@framedjs/core': ^0.5.0
   '@top-gg/sdk': ^3.0.9
   '@types/common-tags': ^1.8.0
   '@types/node': ^14.14.31
