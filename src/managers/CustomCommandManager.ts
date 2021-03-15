@@ -4,6 +4,8 @@ import {
 	Logger,
 	BaseMessage,
 	Utils,
+	EmbedHelper,
+	FriendlyError,
 } from "@framedjs/core";
 import { DatabaseManager } from "./DatabaseManager";
 import Command from "../database/entities/Command";
@@ -196,5 +198,37 @@ export class CustomCommandManager extends CommandManager {
 			);
 		}
 		return false;
+	}
+
+	/**
+	 * Sends error message
+	 *
+	 * @param friendlyError
+	 * @param commandId Command ID for EmbedHelper.getTemplate
+	 */
+	async sendErrorMessage(
+		msg: BaseMessage,
+		friendlyError: FriendlyError,
+		commandId?: string
+	): Promise<void> {
+		const link = `https://discord.gg/RYbkcHfrnR`;
+		if (msg.discord) {
+			const embed = EmbedHelper.getTemplate(
+				msg.discord,
+				await EmbedHelper.getCheckOutFooter(msg, commandId)
+			)
+				.setTitle(friendlyError.friendlyName)
+				.setDescription(friendlyError.message)
+				.addField(
+					"Confused?",
+					`Join our support server [here](${link})!`
+				);
+
+			await msg.discord.channel.send(embed);
+		} else {
+			await msg.send(
+				`${friendlyError.friendlyName}: ${friendlyError.message}`
+			);
+		}
 	}
 }
