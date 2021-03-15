@@ -46,8 +46,8 @@ export default class Poll extends BaseCommand {
 	constructor(plugin: BasePlugin) {
 		super(plugin, {
 			id: "poll",
-			about: oneLine`Create a quick poll through Discord.`,
-			description: oneLine`Create a quick poll through Discord.
+			about: oneLine`Create a poll through Discord.`,
+			description: oneLine`Create a poll through Discord.
 			${process.env.PBP_DESCRIPTION_AD ?? ""}`,
 			usage: '[single] <question> [..."options"]',
 			hideUsageInHelp: true,
@@ -57,7 +57,7 @@ export default class Poll extends BaseCommand {
 			\`$(command ${plugin.id} poll) single "ANIME'S REAL, RIGHT?" "Real" "Not real"\` - Single vote poll`,
 			notes: stripIndents`
 			The \`single\` option will work unless the bot is momentarily offline.
-			${oneLine`For a lasting "choose only one" poll, please use a website like
+			${oneLine`For a lasting single vote poll, please use a website like
 			[strawpoll.me](https://strawpoll.me) instead!`}`,
 			botPermissions: {
 				checkAutomatically: false,
