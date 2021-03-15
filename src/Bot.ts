@@ -128,7 +128,7 @@ async function start() {
 		},
 		defaultPrefix: process.env.DEFAULT_PREFIX,
 		discord: {
-			botOwners: "200340393596944384",
+			botOwners: process.env.BOT_OWNERS?.split(","),
 		},
 		footer: "",
 	});
@@ -152,6 +152,10 @@ async function start() {
 			type: "discord",
 			discord: {
 				token: process.env.DISCORD_TOKEN,
+				clientOptions: {
+					disableMentions: "everyone",
+					partials: ["MESSAGE", "CHANNEL", "REACTION", "USER"],
+				},
 			},
 		},
 	];
@@ -182,36 +186,13 @@ async function start() {
 				await api.postStats({
 					serverCount: discordClient.guilds.cache.size,
 				});
-				Logger.info(`Posted stats to top.gg - serverCount: ${discordClient.guilds.cache.size}`);
+				Logger.info(
+					`Posted stats to top.gg - serverCount: ${discordClient.guilds.cache.size}`
+				);
 			}, 60 * 30 * 1000); // post every 30 minutes
 		} else {
 			Logger.warn("Couldn't find top.gg token!");
 		}
-
-		// Invite link
-		client.discord.client
-			.generateInvite({
-				permissions: [
-					// Likely required for most bots
-					"SEND_MESSAGES",
-
-					// Used in help command, but also allows the potential to use emojis from other servers
-					"USE_EXTERNAL_EMOJIS",
-
-					// Used for getting old messages with polls, after a restart
-					"READ_MESSAGE_HISTORY",
-
-					// Reactions and embeds needed for polls
-					"ADD_REACTIONS",
-					"EMBED_LINKS",
-
-					// Extra permissions for just-in-case
-					"MANAGE_MESSAGES",
-					"VIEW_CHANNEL",
-				],
-			})
-			.then(link => Logger.info(`Generated bot invite link:\n${link}`))
-			.catch(Logger.error);
 	}
 }
 
