@@ -20,6 +20,10 @@ const data: HelpData[] = [
 		group: "Commands",
 		commands: ["help", "ping", "poll", "prefix"].sort(),
 	},
+	{
+		group: "Links",
+		commands: ["support", "invite", "vote", "tip"],
+	},
 ];
 
 export default class Help extends BaseCommand {
@@ -74,7 +78,7 @@ export default class Help extends BaseCommand {
 						);
 						quickStart = stripIndents`
 						\`$(command poll) Do you like pancakes?\` - Simple poll
-						\`$(command poll) Best Doki? "Monika" "Just Monika"\` - Embed poll
+						\`$(command poll) Best Doki? "Monika" "Just Monika"\` - Custom options
 						\`$(command poll) single "ANIME'S REAL, RIGHT?" "Real" "Not real"\` - Single vote poll`;
 					}
 
@@ -96,10 +100,10 @@ export default class Help extends BaseCommand {
 							{
 								name: "Links",
 								value: stripIndents`
-								**[Support](https://discord.gg/RYbkcHfrnR)**  - Got any questions? Join the support server.
+								**[Support](https://discord.gg/RYbkcHfrnR)** - Questions? Need help? Join the support server.
 								**[Invite](https://discord.com/api/oauth2/authorize?client_id=${this.client.discord.client?.user?.id}&permissions=355392&scope=bot)** - Want this bot on your own server? Invite the bot.
-								**[Vote](https://top.gg/bot/804245390642642965/vote)** - Want to support me for free? Vote for this bot.
-								**[Tip Me](https://ko-fi.com/pollbotplus)** - Want to support me financially? Tip me on Ko-Fi.
+								**[Vote](https://top.gg/bot/804245390642642965/vote)** - Want to help us grow? Vote for the bot!
+								**[Tip](https://ko-fi.com/pollbotplus)** - Looking to support me financially? Send love on Ko-fi.
 								`,
 							},
 						])
@@ -131,19 +135,19 @@ export default class Help extends BaseCommand {
 								"Markdown Formatting",
 								stripIndents`
 								To try this example, copy ALL the text below, and paste!
-								\`${commandStr} single Pizza or burger? \`
+								\`${commandStr} single "Pizza or burger?" \`
 								\`"🍕 **Pizza** \`\`\`Clearly the better option.\`\`\`"\`
 								\`"🍔 **Burger** \`\`\`Clearly the superior option.\`\`\`"\``
-							)
-							.addField(
-								"Quotation Marks",
-								stripIndents`
-								${oneLine`If you want to put quotes in your question or
-								options, use backslashes! If there's a pair of quotes in
-								the question, and there's text surrounding it, they're optional.`}
-								\`${commandStr} Here's quote (\\") characters! "Option with a \\"" "Neat!"\`
-								\`${commandStr} Here's a "question" with quotes!\``
 							),
+						// .addField(
+						// 	"Quotation Marks",
+						// 	stripIndents`
+						// 	${oneLine`If you want to put quotes in your question or
+						// 	options, use backslashes! If there's a pair of quotes in
+						// 	the question, and there's text surrounding it, they're optional.`}
+						// 	\`${commandStr} Here's quote (\\") characters! "Option with a \\"" "Neat!"\`
+						// 	\`${commandStr} Here's a "question" with quotes!\``
+						// )
 						place
 					);
 					embed.setFooter(`${newFooterText}`, embed.footer?.iconURL);
