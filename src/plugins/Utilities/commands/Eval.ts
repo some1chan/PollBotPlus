@@ -27,13 +27,13 @@ export default class extends BaseCommand {
 		}
 
 		// Double checks because why not
-		if (msg.discord?.author.id != "200340393596944384") {
-			// not me, ABORT
-			Logger.warn(
-				`EVAL command attempted to be used by ${msg.discord?.author.id} or ${msg.twitch?.user}`
-			);
-			return false;
-		}
+		// if (msg.discord?.author.id != "200340393596944384") {
+		// 	// not me, ABORT
+		// 	Logger.warn(
+		// 		`EVAL command attempted to be used by ${msg.discord?.author.id} or ${msg.twitch?.user}`
+		// 	);
+		// 	return false;
+		// }
 
 		if (process.env.USE_EVAL_COMMAND?.toLocaleLowerCase() == "true") {
 			let content = msg.getArgsContent();
@@ -66,7 +66,7 @@ export default class extends BaseCommand {
 			}
 		} else {
 			Logger.warn(
-				`process.env.USE_EVAL_COMMAND is false (${msg.discord.author.id} or ${msg.twitch?.user})`
+				`process.env.USE_EVAL_COMMAND is false (${msg.discord?.author.id} or ${msg.twitch?.user})`
 			);
 		}
 
