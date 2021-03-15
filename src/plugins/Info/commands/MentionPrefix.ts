@@ -44,9 +44,17 @@ export default class extends BaseCommand {
 			}
 
 			try {
-				return (
-					msg.client.commands.getCommand("help")?.run(msg) ?? false
-				);
+				const command = msg.client.commands.getCommand("help");
+
+				if (!command) {
+					return false;
+				}
+
+				if (
+					await msg.client.commands.checkForPermissions(msg, command)
+				) {
+					await command.run(msg);
+				}
 			} catch (error) {
 				Logger.error(error.stack);
 			}
