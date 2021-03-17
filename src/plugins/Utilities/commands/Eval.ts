@@ -21,7 +21,7 @@ export default class extends BaseCommand {
 		);
 		if (!permsResult.success) {
 			Logger.warn(
-				`${this.id} called by non-bot user (${msg.discord?.author.id})`
+				`${this.id} called by user without permission (${msg.discord?.author.id})`
 			);
 			return false;
 		}
