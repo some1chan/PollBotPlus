@@ -93,7 +93,25 @@ export default class extends BaseEvent {
 			{
 				activity: {
 					type: "PLAYING",
+					name: `${help}@PollBotPlus`,
+				},
+			},
+			{
+				activity: {
+					type: "PLAYING",
 					name: `${vote}@PollBotPlus`,
+				},
+			},
+			{
+				activity: {
+					type: "PLAYING",
+					name: `${help}@PollBotPlus`,
+				},
+			},
+			{
+				activity: {
+					type: "PLAYING",
+					name: `${support}@PollBotPlus`,
 				},
 			}
 		);
