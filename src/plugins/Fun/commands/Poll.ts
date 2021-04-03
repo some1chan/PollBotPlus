@@ -28,6 +28,80 @@ interface PollOptionData {
 	content: string;
 }
 
+interface ArgumentOptions {
+	/**
+	 * If true, this puts the quotes (that are normally removed) inside the arguments.
+	 */
+	showQuoteCharacters?: boolean;
+
+	/**
+	 * If true, parsing will include quoted content into arguments.
+	 * This will also parse parts where there may not be any quotes, but
+	 * it is possible to infer what exactly would be in it.
+	 *
+	 * @example
+	 * Message.getArgs(`arg 0 "arg 1" args 2`, {
+	 * 	separateByQuoteSections: true
+	 * });
+	 * // Expected Result: ["args 0", "args 1", "args 2"]
+	 * // Note that "args 0" and "args 2" didn't have quotes wrapping it.
+	 */
+	separateByQuoteSections?: boolean;
+
+	/**
+	 * If true, this will function mostly the same if separateByQuoteSections was true.
+	 *
+	 * The difference however is that it will only parse quoted content. If there is anything
+	 * outside the quotes, the parse will return undefined.
+	 *
+	 * @example
+	 * Message.getArgs(`"arg 0" "arg 1" "args 2"`, {
+	 * 	strictSeparateQuoteSections: true
+	 * });
+	 * // Expected Result: ["args 0", "args 1", "args 2"]
+	 *
+	 * @example
+	 * Message.getArgs(`"arg 0" arg 1`);
+	 * // Expected Result: undefined
+	 * // Note that `arg 1` didn't have any quotes wrapping it.
+	 */
+	strictSeparateQuoteSections?: boolean;
+
+	/**
+	 * If set to Flexible, parsing will include quoted content into arguments.
+	 * This will also parse parts where there may not be any quotes, but
+	 * would be possible to infer what exactly would be in it.
+	 *
+	 * If set to Strict, parsing will include quoted content into arguments.
+	 * Unlike Flexible, parsing will return undefined if there are parts that
+	 * isn't wrapped with quotes.
+	 *
+	 * @example
+	 * Message.getArgs(`arg 0 "arg 1"`, {
+	 * 	quoteSections: "flexible"
+	 * });
+	 * // Expected Result: ["args 0", "args 1"]
+	 *
+	 * @example
+	 * Message.getArgs(`"arg 0" "arg 1"`, {
+	 * 	quoteSections: "strict"
+	 * });
+	 * // Expected Result: ["args 0", "args 1"]
+	 *
+	 * @example
+	 * Message.getArgs(`arg 0 "arg 1" arg 2`, {
+	 * 	quoteSections: "strict"
+	 * });
+	 * // Expected Result: []
+	 */
+	quoteSections?: "strict" | "flexible";
+}
+
+enum ArgumentState {
+	Quoted,
+	Unquoted,
+}
+
 const msgUrlKey = "msgUrl";
 
 export default class Poll extends BaseCommand {
@@ -382,6 +456,197 @@ export default class Poll extends BaseCommand {
 	}
 
 	/**
+	 * Get the command arguments from a string, but with more data attached to each argument string
+	 *
+	 * @param content Message content
+	 * @param settings Argument parse settings
+	 *
+	 * @returns Command arguments
+	 */
+	static getDetailedArgs(
+		content: string,
+		settings?: ArgumentOptions
+	): Argument[] {
+		const args: Argument[] = [];
+
+		// Parse states; for if in a quoted/unquoted section, or is in a codeblock
+		let state = ArgumentState.Unquoted;
+		let hasCodeBlock = false;
+
+		// What the current argument is
+		let argString = "";
+		let untrimmedArgString = "";
+
+		const quoteCharType1Start = "“";
+		const quoteCharType1End = "”";
+
+		let quoteChar = "";
+
+		for (let i = 0; i < content.length; i++) {
+			const char = content[i];
+
+			// Character comparisons
+			const charIsDoubleQuote =
+				char == `"` ||
+				char == quoteCharType1Start ||
+				char == quoteCharType1End;
+			const charIsSpace = char == " ";
+			const charIsCodeBlock = char == "`";
+
+			// Special character comparisons
+			const charIsEscaped = content[i - 1] == "\\";
+			const charIsEnd = i + 1 == content.length;
+
+			// hasCodeBlock will be true when the message has codeblocks
+			if (charIsCodeBlock) hasCodeBlock = !hasCodeBlock;
+
+			// Check for state change
+			let stateChanged = false;
+			let changeStateToUnquotedLater = false;
+			let justStartedQuote = false;
+
+			// If there was a " to close off a quote section
+			// and the character hasn't been escaped by a \ or `
+			if (charIsDoubleQuote && !(charIsEscaped || hasCodeBlock)) {
+				stateChanged = true;
+
+				switch (state) {
+					case ArgumentState.Quoted:
+						// NOTE: we don't unquote it back immediately, so we
+						// can process the last " character
+						changeStateToUnquotedLater = true;
+						// state = ArgumentState.Unquoted
+						break;
+					case ArgumentState.Unquoted:
+						state = ArgumentState.Quoted;
+						justStartedQuote = true;
+						break;
+				}
+			}
+
+			if (state == ArgumentState.Unquoted) {
+				// If we're unquoted, split with spaces if settings allow it
+				// We'll process excess spaces later
+				if (
+					!charIsSpace ||
+					settings?.quoteSections != undefined ||
+					hasCodeBlock
+				) {
+					if (settings?.quoteSections == "strict") {
+						if (!charIsSpace && !charIsDoubleQuote) {
+							return [];
+						}
+					} else {
+						argString += char;
+						untrimmedArgString += char;
+					}
+					// Logger.debug(`uq '${argString}'`); // LARGE DEBUG OUTPUT
+				} else if (argString.length != 0) {
+					// A separator space has been used, so we push our non-empty argument
+					// Logger.debug(
+					// 	`'${char}' <${content}> ${i} Unquoted "${argString}"`
+					// ); // LARGE DEBUG OUTPUT
+					// Trim argument string, since we're pushing an unquoted argument
+					args.push({
+						argument: argString.trim(),
+						untrimmedArgument: untrimmedArgString,
+						wrappedInQuotes: false,
+						nonClosedQuoteSection: false,
+					});
+					argString = "";
+					untrimmedArgString = "";
+				}
+			} else if (state == ArgumentState.Quoted) {
+				// If we've just started the quote, but the string isn't empty,
+				// push its contents out (carryover from unquoted)
+				if (justStartedQuote) {
+					// Logger.debug(
+					// 	`'${char}' <${content}> ${i} JSQ_NonEmpty - CStU: ${changeStateToUnquotedLater} justStartedQuote ${justStartedQuote} - (${ArgumentState[state]}) - "${argString}"`
+					// ); // LARGE DEBUG OUTPUT
+
+					if (char == `"` && settings?.showQuoteCharacters) {
+						// Fixes edge case where we're just entering quotes now,
+						// and we have the setting to put it in
+						argString += char;
+						untrimmedArgString += char;
+					} else if (!hasCodeBlock) {
+						if (argString.trim().length != 0) {
+							// Since it's been carried over as an unquoted argument
+							// And is just finishing in quoted, we can trim it here
+							args.push({
+								argument: argString.trim(),
+								untrimmedArgument: untrimmedArgString,
+								wrappedInQuotes: false,
+								nonClosedQuoteSection: false,
+							});
+						}
+						argString = "";
+						untrimmedArgString = "";
+					}
+				} else if (
+					settings?.showQuoteCharacters ||
+					!charIsDoubleQuote ||
+					charIsEscaped ||
+					hasCodeBlock
+				) {
+					// If we should be showing quoted characters because of settings,
+					// or we're unquoted, or there's an escape if not
+					argString += char;
+					untrimmedArgString += char;
+					// Logger.debug(` q '${argString}'`); // LARGE DEBUG OUTPUT
+				}
+			}
+
+			// If state change, and the first character isn't a " and just that,
+			// or this is the end of the string,
+			// push the new argument
+			if (
+				(stateChanged && !justStartedQuote) ||
+				(charIsEnd && argString.length > 0)
+			) {
+				// Is ending off with a quote
+				// Logger.debug(
+				// 	`'${char}' <${content}> ${i} State change - CStU: ${changeStateToUnquotedLater} justStartedQuote ${justStartedQuote} - (${ArgumentState[state]}) - "${argString}"`
+				// ); // LARGE DEBUG OUTPUT
+
+				const nonClosedQuoteSection =
+					charIsEnd &&
+					argString.length > 0 &&
+					settings?.quoteSections == "strict" &&
+					!charIsDoubleQuote;
+
+				// Trim if unquoted
+				if (state == ArgumentState.Unquoted)
+					argString = argString.trim();
+
+				if (settings?.quoteSections == "strict") {
+					if (nonClosedQuoteSection) {
+						return [];
+					}
+				}
+
+				args.push({
+					argument: argString,
+					untrimmedArgument: untrimmedArgString,
+					wrappedInQuotes: state == ArgumentState.Quoted,
+					nonClosedQuoteSection: nonClosedQuoteSection,
+				});
+
+				argString = "";
+				untrimmedArgString = "";
+			}
+
+			// Finally changes the state to the proper one
+			// We don't do this for quotes because we need to process putting the " in or not
+			if (changeStateToUnquotedLater) {
+				state = ArgumentState.Unquoted;
+			}
+		}
+
+		return args;
+	}
+
+	/**
 	 * Does a custom parse, specifically for the Poll parameters
 	 * @param msg Framed message
 	 * @param silent Should the bot send an error?
@@ -409,7 +674,7 @@ export default class Poll extends BaseCommand {
 		let question = "";
 		let lastElementQuoted = false;
 		do {
-			detailedArgs = BaseMessage.getDetailedArgs(newContent, {
+			detailedArgs = Poll.getDetailedArgs(newContent, {
 				quoteSections: "flexible",
 			});
 
