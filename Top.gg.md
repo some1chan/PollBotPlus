@@ -13,6 +13,7 @@ code {
 /* Variables */
 :root {
 	--new-accent: #1abc9c;
+    --brand: 26,188,156;
 }
 
 /* Sets a new accent color for Top.gg elements */
@@ -21,6 +22,13 @@ code {
 }
 .entity-header__button-icon {
    background: var(--new-accent);
+}
+/* Invite button */
+.kqdrrU {
+   color: #fff;
+}
+.fhdYEi {
+   color: #fff;
 }
 
 /* Alignment things */
