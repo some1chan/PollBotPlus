@@ -11,7 +11,7 @@ import { DatabaseManager } from "./managers/DatabaseManager";
 import { TypeORMLogger } from "./logger/TypeORMLogger";
 import * as TypeORM from "typeorm";
 import Colors from "colors";
-import { Api as TopggApi } from "@top-gg/sdk";
+import { autopostStats } from "./Stats";
 import Winston from "winston";
 import fs from "fs";
 import path from "path";
@@ -170,29 +170,7 @@ async function start() {
 
 	if (client.discord.client) {
 		// Autoposter
-		if (process.env.TOP_GG_TOKEN) {
-			if (process.env.TOP_GG_SHARDING?.toLocaleLowerCase() == "true") {
-				return;
-			}
-
-			Logger.info("Found top.gg token! Will try to auto-post stats.");
-
-			const discordClient = client.discord.client;
-			if (discordClient) {
-			}
-
-			const api = new TopggApi(process.env.TOP_GG_TOKEN);
-			setInterval(async () => {
-				await api.postStats({
-					serverCount: discordClient.guilds.cache.size,
-				});
-				Logger.info(
-					`Posted stats to top.gg - serverCount: ${discordClient.guilds.cache.size}`
-				);
-			}, 60 * 30 * 1000); // post every 30 minutes
-		} else {
-			Logger.warn("Couldn't find top.gg token!");
-		}
+	    autopostStats(client.discord.client);
 	}
 }
 
